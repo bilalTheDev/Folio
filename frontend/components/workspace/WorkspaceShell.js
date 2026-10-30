@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DOCUMENTS, SOURCES as DEMO_SOURCES } from "@/lib/mock-data";
-import { demoAnswerStream } from "@/lib/sse";
+import { demoAnswerStream, sampleAnswerStream } from "@/lib/sse";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 
@@ -47,24 +48,49 @@ const SEED_QUESTION =
 const SEED_ANSWER =
   "International operating margins contracted about 240 bps. The primary drivers were FX translation variances in EMEA [1] and elevated distribution logistics overhead [2]. North American manufacturing scale partially offset the pressure through fixed-cost absorption [3].";
 
-export function WorkspaceShell({ compactChrome = false }) {
+const DEFAULT_SUGGESTED = [
+  "What drove operating margin contraction in the international segment?",
+  "How did logistics costs change year over year?",
+  "What offset international margin pressure?",
+];
+
+export function WorkspaceShell({
+  compactChrome = false,
+  emptyStart = false,
+  trialMode = false,
+  suggestedQuestions = DEFAULT_SUGGESTED,
+  documentTitle = null,
+}) {
   const [activeDoc, setActiveDoc] = useState(DOCUMENTS[0].id);
   const [activeSource, setActiveSource] = useState(1);
   const [question, setQuestion] = useState("");
   const [sourcesOpen, setSourcesOpen] = useState(true);
   const [sources, setSources] = useState(DEMO_SOURCES);
   const [streaming, setStreaming] = useState(false);
-  const [messages, setMessages] = useState([
-    { id: "u1", role: "user", content: SEED_QUESTION },
-    { id: "a1", role: "assistant", content: SEED_ANSWER, confidence: "99.8%" },
-  ]);
+  const [stopRequested, setStopRequested] = useState(false);
+  const [streamError, setStreamError] = useState("");
+  const [messages, setMessages] = useState(
+    emptyStart
+      ? []
+      : [
+          { id: "u1", role: "user", content: SEED_QUESTION },
+          { id: "a1", role: "assistant", content: SEED_ANSWER, confidence: "99.8%" },
+        ],
+  );
   const sourceRefs = useRef({});
   const bottomRef = useRef(null);
+  const abortRef = useRef(null);
 
   const doc = useMemo(
     () => DOCUMENTS.find((item) => item.id === activeDoc) || DOCUMENTS[0],
     [activeDoc],
   );
+
+  const headingTitle =
+    documentTitle ||
+    (trialMode
+      ? "Folio Sample Report — Q3 Operations Overview"
+      : doc.title.replace(".pdf", "").replaceAll("_", " "));
 
   useEffect(() => {
     const el = sourceRefs.current[activeSource];
@@ -75,58 +101,138 @@ export function WorkspaceShell({ compactChrome = false }) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, streaming]);
 
+  useEffect(() => {
+    return () => abortRef.current?.abort();
+  }, []);
+
   function selectSource(marker) {
     setActiveSource(marker);
     setSourcesOpen(true);
   }
 
-  async function handleAsk() {
-    const text = question.trim();
+  async function runStream(text, { regenerate = false } = {}) {
     if (!text || streaming) return;
     if (text.length > 1000) return;
 
     setQuestion("");
+    setStreamError("");
     setStreaming(true);
+    setStopRequested(false);
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     const userId = `u-${Date.now()}`;
     const assistantId = `a-${Date.now()}`;
-    setMessages((prev) => [
-      ...prev,
-      { id: userId, role: "user", content: text },
-      { id: assistantId, role: "assistant", content: "", confidence: null },
-    ]);
+    setMessages((prev) => {
+      const next = regenerate
+        ? prev.filter((msg, index) => !(index === prev.length - 1 && msg.role === "assistant"))
+        : prev;
+      const withUser = regenerate
+        ? next
+        : [...next, { id: userId, role: "user", content: text }];
+      return [...withUser, { id: assistantId, role: "assistant", content: "", confidence: null }];
+    });
+
+    const handlers = {
+      signal: controller.signal,
+      onCitations: (items) => {
+        setSources(
+          items.map((item) => ({
+            marker: item.marker,
+            page: item.page,
+            location: item.location || "Passage",
+            excerpt: item.excerpt,
+            score: item.score,
+          })),
+        );
+        if (items[0]) setActiveSource(items[0].marker);
+      },
+      onToken: (token) => {
+        if (controller.signal.aborted) return;
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantId ? { ...msg, content: msg.content + token } : msg,
+          ),
+        );
+      },
+      onError: (payload) => {
+        setStreamError(payload?.message || "Something went wrong.");
+      },
+      onDone: (payload) => {
+        const stopped = Boolean(payload?.stopped || controller.signal.aborted);
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantId
+              ? {
+                  ...msg,
+                  confidence: stopped ? "stopped" : "99.8%",
+                  stopped,
+                }
+              : msg,
+          ),
+        );
+      },
+    };
 
     try {
-      await demoAnswerStream(text, {
-        onCitations: (items) => {
-          setSources(
-            items.map((item) => ({
-              marker: item.marker,
-              page: item.page,
-              location: item.location || `Passage`,
-              excerpt: item.excerpt,
-              score: item.score,
-            })),
-          );
-          if (items[0]) setActiveSource(items[0].marker);
-        },
-        onToken: (token) => {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === assistantId ? { ...msg, content: msg.content + token } : msg,
-            ),
-          );
-        },
-        onDone: () => {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === assistantId ? { ...msg, confidence: "99.8%" } : msg,
-            ),
-          );
-        },
-      });
+      if (trialMode) {
+        try {
+          await sampleAnswerStream(text, handlers);
+        } catch (err) {
+          if (controller.signal.aborted) return;
+          // Offline / API down: fall back to local demo stream.
+          setStreamError("");
+          await demoAnswerStream(text, handlers);
+          if (err?.status === 429) {
+            setStreamError(err.message || "Trial limit reached. Sign up to continue.");
+          }
+        }
+      } else {
+        await demoAnswerStream(text, handlers);
+      }
     } finally {
       setStreaming(false);
+      setStopRequested(false);
     }
+  }
+
+  function handleAsk() {
+    runStream(question.trim());
+  }
+
+  function handleRegenerate() {
+    const lastUser = [...messages].reverse().find((msg) => msg.role === "user");
+    if (lastUser) runStream(lastUser.content, { regenerate: true });
+  }
+
+  function handleStop() {
+    setStopRequested(true);
+    abortRef.current?.abort();
+    setStreaming(false);
+    setMessages((prev) => {
+      const last = prev[prev.length - 1];
+      if (!last || last.role !== "assistant") return prev;
+      return prev.map((msg, index) =>
+        index === prev.length - 1
+          ? { ...msg, confidence: msg.confidence || "stopped", stopped: true }
+          : msg,
+      );
+    });
+  }
+
+  function exportMarkdown() {
+    const lines = [`# ${headingTitle}`, "", `_Exported from Folio_`, ""];
+    for (const msg of messages) {
+      lines.push(`## ${msg.role === "user" ? "User" : "Assistant"}`, "", msg.content, "");
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "folio-thread.md";
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -140,22 +246,32 @@ export function WorkspaceShell({ compactChrome = false }) {
           <p className="mono text-[10px] tracking-[0.16em] text-[var(--text-muted)] uppercase">
             Documents
           </p>
-          <button
-            type="button"
+          <Link
+            href="/app/documents/new"
             className="flex h-7 w-7 items-center justify-center rounded-md border border-white/[0.08] text-[var(--text-secondary)] hover:text-[var(--text)]"
             aria-label="Upload document"
           >
             +
-          </button>
+          </Link>
         </div>
         <div className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2">
-          {DOCUMENTS.map((item) => {
-            const active = item.id === activeDoc;
+          {(trialMode
+            ? [
+                {
+                  id: "sample",
+                  title: headingTitle,
+                  pages: 3,
+                  updated: "Sample",
+                },
+              ]
+            : DOCUMENTS
+          ).map((item) => {
+            const active = trialMode ? true : item.id === activeDoc;
             return (
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setActiveDoc(item.id)}
+                onClick={() => !trialMode && setActiveDoc(item.id)}
                 className={`w-full rounded-lg px-3 py-3 text-left transition ${
                   active
                     ? "border border-[var(--accent)]/30 bg-[var(--accent-soft)]"
@@ -177,12 +293,14 @@ export function WorkspaceShell({ compactChrome = false }) {
           })}
         </div>
         <div className="border-t border-white/[0.06] p-4">
-          <p className="text-xs text-[var(--text-secondary)]">Workspace Index: 98.4%</p>
+          <p className="text-xs text-[var(--text-secondary)]">
+            {trialMode ? "Sample index · lexical" : "Workspace Index: 98.4%"}
+          </p>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
             <div className="h-full w-[98%] rounded-full bg-[var(--accent)]" />
           </div>
           <p className="mono mt-2 text-[10px] text-[var(--text-muted)]">
-            145 / 145 vectors cached in RAM
+            {trialMode ? "Auth-free trial · 5 questions / IP / day" : "145 / 145 vectors cached in RAM"}
           </p>
         </div>
       </section>
@@ -191,22 +309,48 @@ export function WorkspaceShell({ compactChrome = false }) {
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] px-6 py-4">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="display text-xl text-[var(--text)]">
-                {doc.title.replace(".pdf", "").replaceAll("_", " ")}
-              </h1>
-              <Badge tone="accent">Verified</Badge>
+              <h1 className="display text-xl text-[var(--text)]">{headingTitle}</h1>
+              <Badge tone="accent">{trialMode ? "Sample" : "Verified"}</Badge>
             </div>
             <p className="mt-1 text-xs text-[var(--text-muted)]">
-              {doc.pages} pages · Indexed via Groq Llama 3.3
+              {trialMode
+                ? "Public trial · grounded answers with citations"
+                : `${doc.pages} pages · Indexed via Groq Llama 3.3`}
             </p>
           </div>
-          <Badge tone="cyan">{streaming ? "streaming…" : "420 tok/sec"}</Badge>
+          <div className="flex items-center gap-2">
+            {messages.length ? (
+              <Button size="sm" variant="ghost" onClick={exportMarkdown}>
+                Export
+              </Button>
+            ) : null}
+            <Badge tone="cyan">{streaming ? "streaming…" : "420 tok/sec"}</Badge>
+          </div>
         </div>
 
         <div
           className="flex-1 space-y-5 overflow-y-auto px-6 py-6 md:px-8"
           aria-live="polite"
         >
+          {!messages.length ? (
+            <div className="mx-auto max-w-[680px]">
+              <p className="mono text-[11px] tracking-[0.14em] text-[var(--text-muted)] uppercase">
+                Suggested questions
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {suggestedQuestions.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    className="rounded-lg border border-white/[0.08] bg-[var(--surface)] px-3 py-2 text-left text-sm text-[var(--text-secondary)] hover:border-[var(--accent)]/30 hover:text-[var(--text)]"
+                    onClick={() => runStream(item)}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
           {messages.map((msg) =>
             msg.role === "user" ? (
               <div
@@ -230,8 +374,10 @@ export function WorkspaceShell({ compactChrome = false }) {
                 {msg.confidence ? (
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--accent)]/20 bg-[var(--accent-soft)] px-3 py-2">
                     <p className="text-xs text-[var(--accent)]">
-                      ✓ Grounding Confidence: {msg.confidence} ({sources.length} citations
-                      matched)
+                      {msg.stopped ? "■ Generation stopped" : "✓ Grounding Confidence:"}{" "}
+                      {msg.stopped
+                        ? ""
+                        : `${msg.confidence} (${sources.length} citations matched)`}
                     </p>
                     <div className="flex gap-1">
                       <Button
@@ -241,8 +387,8 @@ export function WorkspaceShell({ compactChrome = false }) {
                       >
                         Copy
                       </Button>
-                      <Button size="sm" variant="ghost">
-                        Export
+                      <Button size="sm" variant="ghost" onClick={handleRegenerate}>
+                        Regenerate
                       </Button>
                     </div>
                   </div>
@@ -250,6 +396,9 @@ export function WorkspaceShell({ compactChrome = false }) {
               </div>
             ),
           )}
+          {streamError ? (
+            <p className="mx-auto max-w-[680px] text-sm text-[var(--danger)]">{streamError}</p>
+          ) : null}
           <div ref={bottomRef} />
         </div>
 
@@ -271,8 +420,8 @@ export function WorkspaceShell({ compactChrome = false }) {
               disabled={streaming}
             />
             {streaming ? (
-              <Button size="sm" variant="secondary" onClick={() => setStreaming(false)}>
-                Stop
+              <Button size="sm" variant="secondary" onClick={handleStop}>
+                {stopRequested ? "Stopping…" : "Stop"}
               </Button>
             ) : (
               <Button

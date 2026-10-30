@@ -1,3 +1,5 @@
+import { apiFetch } from "@/lib/api";
+
 /**
  * Parse a Server-Sent Events stream from a fetch Response.
  * Calls onEvent(eventName, dataObject) for each event.
@@ -5,7 +7,16 @@
 export async function readSse(response, { onEvent, signal } = {}) {
   if (!response.ok || !response.body) {
     const text = await response.text().catch(() => "");
-    throw new Error(text || `Request failed (${response.status})`);
+    let message = text || `Request failed (${response.status})`;
+    try {
+      const parsed = JSON.parse(text);
+      message = parsed?.detail?.message || parsed?.message || message;
+    } catch {
+      // keep raw
+    }
+    const err = new Error(message);
+    err.status = response.status;
+    throw err;
   }
 
   const reader = response.body.getReader();
@@ -51,8 +62,68 @@ export async function readSse(response, { onEvent, signal } = {}) {
   flush();
 }
 
+function mapCitations(payload) {
+  const items = payload?.items || payload || [];
+  return items.map((item) => ({
+    marker: item.marker,
+    page: item.page,
+    location: item.location || `Page ${item.page}`,
+    excerpt: item.excerpt,
+    score: item.score,
+  }));
+}
+
+async function consumeAnswerStream(response, { onMeta, onCitations, onToken, onDone, onError, signal }) {
+  let sawDone = false;
+  await readSse(response, {
+    signal,
+    onEvent: (event, data) => {
+      if (event === "meta") onMeta?.(data);
+      else if (event === "citations") onCitations?.(mapCitations(data));
+      else if (event === "token") onToken?.(data?.text ?? "");
+      else if (event === "done") {
+        sawDone = true;
+        onDone?.(data);
+      } else if (event === "error") onError?.(data);
+    },
+  });
+  if (!sawDone && !signal?.aborted) onDone?.({ stopped: false });
+}
+
+/** Live sample-document trial stream (auth-free, IP-limited). */
+export async function sampleAnswerStream(question, handlers = {}) {
+  const controller = handlers.signal ? null : new AbortController();
+  const signal = handlers.signal || controller.signal;
+  const response = await apiFetch("/sample/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content: question, provider: "groq" }),
+    signal,
+  });
+  await consumeAnswerStream(response, { ...handlers, signal });
+  return { abort: () => controller?.abort() };
+}
+
+/** Authenticated thread question stream. */
+export async function threadAnswerStream(threadId, question, handlers = {}) {
+  const controller = handlers.signal ? null : new AbortController();
+  const signal = handlers.signal || controller.signal;
+  const response = await apiFetch(`/threads/${threadId}/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      content: question,
+      provider: "groq",
+      regenerate: Boolean(handlers.regenerate),
+    }),
+    signal,
+  });
+  await consumeAnswerStream(response, { ...handlers, signal });
+  return { abort: () => controller?.abort() };
+}
+
 /** Demo stream for portfolio UI when no live API key/session is available. */
-export async function demoAnswerStream(question, { onToken, onCitations, onDone }) {
+export async function demoAnswerStream(question, { onToken, onCitations, onDone, signal } = {}) {
   const answer =
     "International operating margins contracted about 240 bps. The primary drivers were FX " +
     "translation variances in EMEA [1] and elevated distribution logistics overhead [2]. " +
@@ -87,8 +158,9 @@ export async function demoAnswerStream(question, { onToken, onCitations, onDone 
 
   const words = answer.split(/(\s+)/);
   for (const word of words) {
+    if (signal?.aborted) break;
     onToken?.(word);
     await new Promise((r) => setTimeout(r, 18 + Math.random() * 28));
   }
-  onDone?.({ demo: true, question });
+  onDone?.({ demo: true, question, stopped: Boolean(signal?.aborted) });
 }

@@ -1,5 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async rewrites() {
+    // On Vercel, vercel.json routes /api to the Python function.
+    if (process.env.VERCEL) return [];
+    const apiOrigin = process.env.FOLIO_API_URL || "http://127.0.0.1:8000";
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${apiOrigin}/api/:path*`,
+      },
+    ];
+  },
   async headers() {
     return [
       {
@@ -13,7 +24,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob:",
               "font-src 'self' data:",
-              "connect-src 'self'",
+              "connect-src 'self' http://127.0.0.1:8000 http://localhost:8000",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",

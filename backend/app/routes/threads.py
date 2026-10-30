@@ -138,6 +138,46 @@ async def list_messages(
     return list(result.scalars().unique().all())
 
 
+@router.get("/{thread_id}/export")
+async def export_thread_markdown(
+    thread_id: uuid.UUID,
+    user: AuthUser = Depends(get_current_db_user),
+    session: AsyncSession = Depends(get_session),
+) -> Response:
+    """Export a thread as Markdown (HI-04)."""
+    thread = await _get_owned_thread(session, thread_id, user.id)
+    result = await session.execute(
+        select(Message)
+        .where(Message.thread_id == thread_id)
+        .options(selectinload(Message.citations))
+        .order_by(Message.created_at.asc())
+    )
+    messages = list(result.scalars().unique().all())
+    lines = [f"# {thread.title}", "", f"_Exported from Folio · thread `{thread.id}`_", ""]
+    for message in messages:
+        heading = "User" if message.role == "user" else "Assistant"
+        lines.append(f"## {heading}")
+        lines.append("")
+        lines.append(message.content)
+        lines.append("")
+        if message.role == "assistant" and message.citations:
+            lines.append("### Sources")
+            lines.append("")
+            for cite in sorted(message.citations, key=lambda c: c.marker):
+                lines.append(
+                    f"- [{cite.marker}] page {cite.page} (score {cite.score:.2f}): "
+                    f"{cite.excerpt}"
+                )
+            lines.append("")
+    body = "\n".join(lines)
+    filename = f"folio-thread-{thread_id}.md"
+    return Response(
+        content=body,
+        media_type="text/markdown; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.post("/{thread_id}/messages")
 async def ask_question(
     thread_id: uuid.UUID,
@@ -189,23 +229,40 @@ async def ask_question(
 
     model_name = body.model or provider["default_model"]
 
-    # Auto-title from first question
-    existing = await session.execute(
-        select(Message).where(Message.thread_id == thread_id).limit(1)
-    )
-    if existing.scalar_one_or_none() is None:
-        thread.title = body.content.strip()[:60]
+    question_text = body.content.strip()
 
-    user_message = Message(
-        thread_id=thread.id,
-        role="user",
-        content=body.content.strip(),
-    )
-    session.add(user_message)
-    await session.flush()
+    # Regenerate: reuse the last user question when flagged.
+    if body.regenerate:
+        last_user = await session.execute(
+            select(Message)
+            .where(Message.thread_id == thread_id, Message.role == "user")
+            .order_by(Message.created_at.desc())
+            .limit(1)
+        )
+        prior = last_user.scalar_one_or_none()
+        if prior is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "not_found", "message": "No prior question to regenerate"},
+            )
+        question_text = prior.content
+    else:
+        existing = await session.execute(
+            select(Message).where(Message.thread_id == thread_id).limit(1)
+        )
+        if existing.scalar_one_or_none() is None:
+            thread.title = question_text[:60]
+        session.add(
+            Message(
+                thread_id=thread.id,
+                role="user",
+                content=question_text,
+            )
+        )
+        await session.flush()
 
     chunks = await retrieve_chunks(
-        session, document_id=thread.document_id, question=body.content
+        session, document_id=thread.document_id, question=question_text
     )
     blocks = to_context_blocks(chunks)
     cites = citation_items(blocks)
@@ -230,7 +287,7 @@ async def ask_question(
                 provider_id=body.provider,
                 model=model_name,
                 api_key=api_key,
-                question=body.content,
+                question=question_text,
                 blocks=blocks,
             ):
                 answer_parts.append(token)

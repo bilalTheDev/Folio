@@ -18,6 +18,18 @@ const LINKS = [
     match: (p) => p === "/app" || p.startsWith("/app/threads") || p === "/workspace",
   },
   {
+    href: "/app/library",
+    label: "Document Vault",
+    icon: IconArchive,
+    match: (p) => p.startsWith("/app/library") || p.startsWith("/app/documents"),
+  },
+  {
+    href: "/app/history",
+    label: "History",
+    icon: IconFileText,
+    match: (p) => p.startsWith("/app/history"),
+  },
+  {
     href: "/app/settings",
     label: "Account & Settings",
     icon: IconSettings,
@@ -28,12 +40,6 @@ const LINKS = [
     label: "Admin Portal",
     icon: IconShield,
     match: (p) => p.startsWith("/app/admin") || p === "/admin",
-  },
-  {
-    href: "/app/library",
-    label: "Document Vault",
-    icon: IconArchive,
-    match: (p) => p.startsWith("/app/library"),
   },
 ];
 

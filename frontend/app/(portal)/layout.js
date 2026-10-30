@@ -1,4 +1,5 @@
 import { AppSidebar } from "@/components/portal/AppSidebar";
+import { CommandPalette } from "@/components/portal/CommandPalette";
 import { QuietBar } from "@/components/portal/QuietBar";
 
 export default function PortalLayout({ children }) {
@@ -11,6 +12,8 @@ export default function PortalLayout({ children }) {
         <QuietBar />
         <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
       </div>
+      <CommandPalette />
     </div>
   );
 }
+

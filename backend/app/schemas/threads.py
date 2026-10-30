@@ -54,6 +54,8 @@ class AskMessageIn(BaseModel):
     content: str = Field(min_length=1, max_length=1000)
     provider: str = "groq"
     model: str | None = None
+    regenerate: bool = False
+
 
 
 class ThreadListOut(BaseModel):

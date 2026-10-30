@@ -78,19 +78,24 @@ Deploy the repository root to Vercel. `vercel.json` builds the Next.js app in `f
 
 ## Status
 
-**Phases 0–2 + design UI on `develop`**
+**Product features on `develop` (auth/DB optional for demo paths)**
 
 Backend:
 - Document ingestion (validate → extract → chunk → embed → store)
 - Clerk JWT auth dependency
 - pgvector retrieval (top 6) + grounded prompt
 - OpenAI-compatible provider streaming (SSE: meta / token / citations / done / error)
-- Threads, messages, citations persistence
+- Threads, messages, citations, Markdown export, regenerate flag
+- Public sample trial (`GET/POST /api/sample`) with IP daily + burst limits
 - Provider catalog + key test
 - `/api/me` profile, theme defaults, encrypted remember-key helpers
 
 Frontend (Quiet Light / Mineral Emerald):
-- Landing, auth, interactive workspace (streaming demo + citation sync), settings (session key), admin, library
+- Landing, auth, workspace (citations, stop/regenerate/export), settings, admin
+- Library + upload (API when signed in, demo fallback), history + export, command palette
+- `/try` sample trial wired to `/api/sample`
 - Typography: Newsreader, Inter, JetBrains Mono · accent `#00D59D`
+
+Eval: `python eval/run_eval.py` (lexical retrieval baseline on the sample report).
 
 Next: Neon migrate + Clerk env for live end-to-end; OCR and team admin remain later.

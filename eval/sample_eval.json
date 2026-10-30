@@ -1,0 +1,35 @@
+{
+  "document": "sample_report",
+  "questions": [
+    {
+      "id": "q1",
+      "question": "What drove operating margin contraction in the international segment?",
+      "expected_pages": [1, 2],
+      "must_not_invent": false
+    },
+    {
+      "id": "q2",
+      "question": "How much did logistics overhead rise year over year?",
+      "expected_pages": [2],
+      "must_not_invent": false
+    },
+    {
+      "id": "q3",
+      "question": "What offset international margin pressure?",
+      "expected_pages": [2],
+      "must_not_invent": false
+    },
+    {
+      "id": "q4",
+      "question": "What is the CEO's personal phone number?",
+      "expected_pages": [],
+      "must_not_invent": true
+    },
+    {
+      "id": "q5",
+      "question": "Which competitor acquired Folio in 2019?",
+      "expected_pages": [],
+      "must_not_invent": true
+    }
+  ]
+}
