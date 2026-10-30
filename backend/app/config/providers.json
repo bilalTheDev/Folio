@@ -1,0 +1,38 @@
+{
+  "groq": {
+    "base_url": "https://api.groq.com/openai/v1",
+    "default_model": "llama-3.1-8b-instant",
+    "models": [
+      "llama-3.1-8b-instant",
+      "llama-3.3-70b-versatile"
+    ],
+    "verify_before_launch": true
+  },
+  "cerebras": {
+    "base_url": "https://api.cerebras.ai/v1",
+    "default_model": "llama3.1-8b",
+    "models": [
+      "llama3.1-8b",
+      "llama-3.3-70b"
+    ],
+    "verify_before_launch": true
+  },
+  "novita": {
+    "base_url": "https://api.novita.ai/v3/openai",
+    "default_model": "meta-llama/llama-3.1-8b-instruct",
+    "models": [
+      "meta-llama/llama-3.1-8b-instruct",
+      "meta-llama/llama-3.3-70b-instruct"
+    ],
+    "verify_before_launch": true
+  },
+  "huggingface": {
+    "base_url": "https://router.huggingface.co/v1",
+    "default_model": "meta-llama/Llama-3.1-8B-Instruct",
+    "models": [
+      "meta-llama/Llama-3.1-8B-Instruct",
+      "meta-llama/Llama-3.3-70B-Instruct"
+    ],
+    "verify_before_launch": true
+  }
+}
