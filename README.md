@@ -78,6 +78,17 @@ Deploy the repository root to Vercel. `vercel.json` builds the Next.js app in `f
 
 ## Status
 
-**Phase 1: ingestion (in progress on `develop`)**
+**Phase 1 + frontend UI on `develop`**
 
-Document upload pipeline is implemented on the backend: validate → extract → chunk → embed → store, plus Clerk JWT auth for protected document routes. Retrieval, chat UI, and provider keys come next.
+Backend: document ingestion API (validate → extract → chunk → embed → store) with Clerk JWT auth.
+
+Frontend screens (design-matched, mock data where APIs are not wired yet):
+- `/` landing
+- `/sign-in`, `/sign-up`
+- `/try` trial workspace
+- `/app` chat workspace with sources
+- `/app/settings` account & BYOK preferences
+- `/app/admin` organization admin portal
+- `/app/library` document vault
+
+Next: retrieval + SSE generation (Phase 2), then wire UI to live APIs.
