@@ -18,23 +18,25 @@ export function AuthCard({ mode = "sign-in" }) {
   }
 
   return (
-    <div className="folio-glow flex min-h-screen flex-col items-center justify-center px-4 py-10">
-      <div className="w-full max-w-[420px] rounded-[20px] border border-[var(--hairline)] bg-[var(--surface)] p-8 shadow-[var(--shadow-soft)]">
+    <div className="folio-auth-glow flex min-h-screen flex-col items-center justify-center p-6">
+      <div className="w-full max-w-md rounded-2xl border border-white/[0.08] bg-[var(--surface)] p-8 shadow-[var(--shadow-2xl)]">
         <div className="flex justify-center">
           <Logo withWordmark={false} size={40} />
         </div>
         <h1 className="display mt-6 text-center text-3xl text-[var(--text)]">
-          {isSignIn ? "Return to your documents" : "Create your workspace"}
+          {isSignIn ? "Return to your documents" : "Begin reading with precision"}
         </h1>
         <p className="mt-3 text-center text-sm text-[var(--text-secondary)]">
           A focused sanctuary for legal, technical, and deep research synthesis.
         </p>
 
-        <div className="mt-6 grid grid-cols-2 rounded-full bg-[var(--bg-elevated)] p-1">
+        <div className="mt-6 grid grid-cols-2 rounded-full bg-[var(--bg-chrome)] p-1">
           <button
             type="button"
             className={`rounded-full py-2 text-sm transition ${
-              isSignIn ? "bg-[var(--accent)] text-[#06140f]" : "text-[var(--text-secondary)]"
+              isSignIn
+                ? "bg-[var(--accent)] text-[var(--accent-ink)]"
+                : "text-[var(--text-secondary)]"
             }`}
             onClick={() => setActive("sign-in")}
           >
@@ -43,7 +45,9 @@ export function AuthCard({ mode = "sign-in" }) {
           <button
             type="button"
             className={`rounded-full py-2 text-sm transition ${
-              !isSignIn ? "bg-[var(--accent)] text-[#06140f]" : "text-[var(--text-secondary)]"
+              !isSignIn
+                ? "bg-[var(--accent)] text-[var(--accent-ink)]"
+                : "text-[var(--text-secondary)]"
             }`}
             onClick={() => setActive("sign-up")}
           >
@@ -60,10 +64,10 @@ export function AuthCard({ mode = "sign-in" }) {
           </Button>
         </div>
 
-        <div className="mono my-5 flex items-center gap-3 text-[10px] tracking-[0.14em] text-[var(--text-muted)]">
-          <span className="h-px flex-1 bg-[var(--hairline)]" />
+        <div className="mono my-5 flex items-center gap-3 text-[10px] tracking-[0.16em] text-[var(--text-muted)]">
+          <span className="h-px flex-1 bg-white/[0.08]" />
           OR WITH CREDENTIALS
-          <span className="h-px flex-1 bg-[var(--hairline)]" />
+          <span className="h-px flex-1 bg-white/[0.08]" />
         </div>
 
         <form className="space-y-4" onSubmit={onSubmit}>
@@ -82,7 +86,10 @@ export function AuthCard({ mode = "sign-in" }) {
             required
             hint={
               isSignIn ? (
-                <Link href="#" className="normal-case tracking-normal text-[var(--text-muted)]">
+                <Link
+                  href="#"
+                  className="normal-case tracking-normal text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                >
                   Forgot code?
                 </Link>
               ) : null
@@ -102,13 +109,13 @@ export function AuthCard({ mode = "sign-in" }) {
           </Button>
         </form>
 
-        <p className="mono mt-5 text-center text-[10px] tracking-[0.12em] text-[var(--text-muted)]">
+        <p className="mono mt-5 text-center text-[10px] tracking-[0.14em] text-[var(--text-muted)]">
           END-TO-END ENCRYPTED · SOC2 TYPE II · BYOK READY
         </p>
       </div>
 
       <p className="mono mt-8 flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
-        <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
+        <span className="live-dot h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
         Cluster US-East · Isolated Reading Node
       </p>
     </div>

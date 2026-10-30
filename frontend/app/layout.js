@@ -1,4 +1,4 @@
-import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -7,10 +7,11 @@ const inter = Inter({
   display: "swap",
 });
 
-const fraunces = Fraunces({
+const newsreader = Newsreader({
   subsets: ["latin"],
-  variable: "--font-fraunces",
+  variable: "--font-newsreader",
   display: "swap",
+  styles: ["normal", "italic"],
 });
 
 const jetbrains = JetBrains_Mono({
@@ -22,13 +23,18 @@ const jetbrains = JetBrains_Mono({
 export const metadata = {
   title: "Folio — Ask the page.",
   description:
-    "Upload a PDF, DOCX, or TXT and get answers grounded in the document with page citations. Bring your own free key.",
+    "Upload any PDF or research document. Receive precise answers backed by deterministic citations you can verify instantly.",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${inter.variable} ${fraunces.variable} ${jetbrains.variable}`}>
-      <body className="font-sans antialiased">{children}</body>
+    <html
+      lang="en"
+      className={`${inter.variable} ${newsreader.variable} ${jetbrains.variable}`}
+    >
+      <body className="bg-[var(--bg)] font-sans text-[var(--text)] antialiased">
+        {children}
+      </body>
     </html>
   );
 }

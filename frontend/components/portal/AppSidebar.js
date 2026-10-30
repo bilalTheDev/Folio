@@ -3,54 +3,84 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/brand/Logo";
+import {
+  IconArchive,
+  IconFileText,
+  IconSettings,
+  IconShield,
+} from "@/components/icons/NavIcons";
 
 const LINKS = [
-  { href: "/app", label: "Workspace", match: (p) => p === "/app" || p.startsWith("/app/threads") },
-  { href: "/app/settings", label: "Account & Settings", match: (p) => p.startsWith("/app/settings") },
-  { href: "/app/admin", label: "Admin Portal", match: (p) => p.startsWith("/app/admin") },
-  { href: "/app/library", label: "Document Vault", match: (p) => p.startsWith("/app/library") },
+  {
+    href: "/app",
+    label: "Workspace",
+    icon: IconFileText,
+    match: (p) => p === "/app" || p.startsWith("/app/threads") || p === "/workspace",
+  },
+  {
+    href: "/app/settings",
+    label: "Account & Settings",
+    icon: IconSettings,
+    match: (p) => p.startsWith("/app/settings") || p === "/settings",
+  },
+  {
+    href: "/app/admin",
+    label: "Admin Portal",
+    icon: IconShield,
+    match: (p) => p.startsWith("/app/admin") || p === "/admin",
+  },
+  {
+    href: "/app/library",
+    label: "Document Vault",
+    icon: IconArchive,
+    match: (p) => p.startsWith("/app/library"),
+  },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-full w-[240px] shrink-0 flex-col border-r border-[var(--hairline)] bg-[var(--bg-elevated)]">
-      <div className="flex items-center gap-2 px-5 pt-5 pb-6">
-        <Logo size={26} />
-        <span className="mono rounded-full border border-[var(--hairline)] px-2 py-0.5 text-[10px] tracking-wider text-[var(--text-muted)]">
-          PORTAL
-        </span>
+    <aside className="flex h-full w-64 shrink-0 flex-col justify-between border-r border-white/[0.06] bg-[var(--bg-chrome)] p-4">
+      <div>
+        <div className="mb-6 flex items-center gap-2 px-1 pt-1">
+          <Logo size={24} />
+          <span className="mono rounded-full border border-white/[0.08] px-2 py-0.5 text-[10px] tracking-[0.14em] text-[var(--text-muted)]">
+            PORTAL
+          </span>
+        </div>
+
+        <nav className="flex flex-col gap-1">
+          {LINKS.map((link) => {
+            const active = link.match(pathname);
+            const Icon = link.icon;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition ${
+                  active
+                    ? "border-l-2 border-[var(--accent)] bg-white/[0.05] pl-[10px] text-[var(--text)]"
+                    : "border-l-2 border-transparent text-[var(--text-secondary)] hover:bg-white/[0.03] hover:text-[var(--text)]"
+                }`}
+              >
+                <Icon className="h-4 w-4 shrink-0 opacity-80" />
+                {link.label}
+              </Link>
+            );
+          })}
+        </nav>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 px-3">
-        {LINKS.map((link) => {
-          const active = link.match(pathname);
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`rounded-[12px] px-3 py-2.5 text-sm transition ${
-                active
-                  ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-                  : "text-[var(--text-secondary)] hover:bg-white/5 hover:text-[var(--text)]"
-              }`}
-            >
-              {link.label}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="border-t border-[var(--hairline)] p-4">
+      <div className="rounded-lg border border-white/[0.06] bg-[var(--surface)] px-3 py-3">
         <div className="flex items-center justify-between gap-2">
           <div>
             <p className="text-sm text-[var(--text)]">C. Vance</p>
             <p className="text-xs text-[var(--text-muted)]">Reader</p>
           </div>
           <Link
-            href="/sign-in"
-            className="rounded-lg border border-[var(--hairline)] px-2 py-1 text-xs text-[var(--text-secondary)] hover:text-[var(--text)]"
+            href="/login"
+            className="rounded-md border border-white/[0.08] px-2 py-1 text-[11px] text-[var(--text-secondary)] hover:text-[var(--text)]"
           >
             Log out
           </Link>

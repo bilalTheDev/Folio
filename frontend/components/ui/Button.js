@@ -7,29 +7,33 @@ export function Button({
   ...props
 }) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-[12px] font-medium transition duration-200 disabled:opacity-50 disabled:pointer-events-none";
+    "inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-45";
 
   const sizes = {
-    sm: "h-9 px-3 text-sm",
-    md: "h-11 px-4 text-sm",
-    lg: "h-12 px-5 text-[15px]",
+    sm: "h-8 px-3 text-sm rounded-md",
+    md: "h-10 px-4 text-sm rounded-lg",
+    lg: "h-11 px-5 text-[15px] rounded-lg",
+    pill: "h-9 px-4 text-sm rounded-full",
+    icon: "h-10 w-10 rounded-full",
   };
 
   const variants = {
     primary:
-      "bg-[var(--accent)] text-[#06140f] hover:bg-[var(--accent-strong)] shadow-[0_0_24px_var(--accent-glow)]",
+      "bg-[var(--accent)] text-[var(--accent-ink)] hover:bg-[var(--accent-hover)]",
     secondary:
-      "bg-transparent text-[var(--text)] border border-[var(--hairline-strong)] hover:bg-white/5",
-    ghost: "bg-transparent text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-white/5",
+      "bg-transparent text-[var(--text)] border border-white/[0.12] hover:bg-white/[0.04]",
+    ghost:
+      "bg-transparent text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-white/[0.04]",
+    dark:
+      "bg-[var(--surface-elevated)] text-[var(--text)] border border-white/[0.08] hover:border-white/[0.14]",
     danger:
       "bg-[var(--danger-soft)] text-[var(--danger)] border border-[var(--danger)]/30 hover:bg-[var(--danger)]/20",
-    dark: "bg-[var(--surface-2)] text-[var(--text)] border border-[var(--hairline)] hover:border-[var(--hairline-strong)]",
   };
 
   return (
     <button
       type={type}
-      className={`${base} ${sizes[size]} ${variants[variant]} ${className}`}
+      className={`${base} ${sizes[size] || sizes.md} ${variants[variant] || variants.primary} ${className}`}
       {...props}
     >
       {children}

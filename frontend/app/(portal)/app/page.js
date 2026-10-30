@@ -5,5 +5,9 @@ export const metadata = {
 };
 
 export default function WorkspacePage() {
-  return <WorkspaceShell />;
+  return (
+    <div className="h-[calc(100vh-3rem)]">
+      <WorkspaceShell />
+    </div>
+  );
 }

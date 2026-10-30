@@ -1,10 +1,11 @@
 export function Badge({ children, tone = "neutral", className = "" }) {
   const tones = {
-    neutral: "bg-white/5 text-[var(--text-secondary)] border-white/10",
+    neutral: "bg-white/[0.04] text-[var(--text-secondary)] border-white/[0.08]",
     accent: "bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--accent)]/25",
-    violet: "bg-[var(--violet-soft)] text-[#c4b5fd] border-[var(--violet)]/30",
+    cyan: "bg-[rgba(56,189,248,0.12)] text-[var(--cyan)] border-[var(--cyan)]/25",
+    violet: "bg-[rgba(167,139,250,0.12)] text-[var(--violet-muted)] border-[var(--violet-muted)]/25",
     danger: "bg-[var(--danger-soft)] text-[var(--danger)] border-[var(--danger)]/25",
-    warning: "bg-[rgba(245,185,78,0.12)] text-[var(--warning)] border-[var(--warning)]/25",
+    warning: "bg-[rgba(245,158,11,0.12)] text-[#f59e0b] border-[#f59e0b]/25",
   };
 
   return (

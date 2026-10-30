@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -13,7 +14,7 @@ const FAQS = [
   },
   {
     q: "Are my uploaded documents stored on a server?",
-    a: "Raw files are discarded after text extraction. Folio keeps only chunks, embeddings, and chat history you choose to retain.",
+    a: "Raw files are discarded after text extraction. Folio keeps only chunks, embeddings, and chat history you choose to retain—never permanent original uploads.",
   },
   {
     q: "Which file formats and sizes are supported?",
@@ -21,14 +22,41 @@ const FAQS = [
   },
   {
     q: "How does Bring Your Own Key (BYOK) work?",
-    a: "You paste a free key from Groq, Cerebras, Novita, or Hugging Face. Folio never pays for your inference and never logs the key.",
+    a: "Paste a free key from Groq, Cerebras, Novita, or Hugging Face. Folio never pays for your inference and never logs the key.",
   },
 ];
+
+const SCENARIOS = {
+  finance: {
+    label: "Financial 10-K Filings",
+    prompt: "What drove operating margin contraction in the international segment?",
+    excerpt:
+      "International segment operating margins contracted 240 bps, driven primarily by FX translation variances and elevated logistics costs in EMEA.",
+    page: "Page 58 · Item 7 MD&A",
+    latency: "480ms",
+  },
+  clinical: {
+    label: "Clinical Research & Trials",
+    prompt: "What was the primary endpoint success criterion in Cohort B?",
+    excerpt:
+      "Cohort B met the co-primary endpoint of ≥30% reduction in biomarker X at week 12 versus baseline (p < 0.01).",
+    page: "Page 22 · Section 4.1",
+    latency: "512ms",
+  },
+  legal: {
+    label: "Legal SLAs & Contracts",
+    prompt: "When may either party terminate for convenience?",
+    excerpt:
+      "Either party may terminate for convenience upon ninety (90) days’ prior written notice, subject to wind-down obligations in Schedule C.",
+    page: "Page 11 · § 8.2",
+    latency: "401ms",
+  },
+};
 
 function FaqItem({ item }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border-b border-[var(--hairline)]">
+    <div className="border-b border-white/[0.06]">
       <button
         type="button"
         className="flex w-full items-center justify-between gap-4 py-5 text-left"
@@ -39,46 +67,58 @@ function FaqItem({ item }) {
         <span className="text-[var(--text-muted)]">{open ? "−" : "+"}</span>
       </button>
       {open ? (
-        <p className="pb-5 text-sm text-[var(--text-secondary)]">{item.a}</p>
+        <p className="fade-up pb-5 text-sm text-[var(--text-secondary)]">{item.a}</p>
       ) : null}
     </div>
   );
 }
 
-function HeroPreview() {
+function EnginePreview() {
   return (
-    <div className="glass mx-auto mt-14 max-w-3xl overflow-hidden rounded-[20px] shadow-[var(--shadow-soft)]">
-      <div className="border-b border-[var(--hairline)] px-5 py-3 text-xs text-[var(--text-muted)]">
-        Q3 Financial Analysis · Verified · Groq Llama 3.3
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
+      className="mx-auto mt-14 max-w-3xl overflow-hidden rounded-xl border border-white/[0.08] bg-[var(--surface)] shadow-[var(--shadow-2xl)]"
+    >
+      <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3">
+        <p className="mono text-[11px] text-[var(--text-muted)]">
+          Alphabet_Q4_Financial_Report.pdf
+        </p>
+        <Badge tone="accent">● 99.8% Grounding Confidence</Badge>
       </div>
       <div className="space-y-4 p-5">
-        <div className="ml-auto max-w-[85%] rounded-[14px] bg-[var(--surface-2)] px-4 py-3 text-sm">
-          What was the net impact of foreign exchange fluctuations in Section A.2?
+        <div className="ml-auto max-w-[88%] rounded-lg bg-[var(--surface-elevated)] px-4 py-3 text-sm text-[var(--text)]">
+          Folio, what is the key driver behind the bilateral margin fluctuations in Section A.2?
         </div>
-        <div className="max-w-[92%] rounded-[14px] border border-[var(--hairline)] bg-[var(--bg-elevated)] px-4 py-3 text-sm leading-relaxed text-[var(--text-secondary)]">
-          FX translation reduced international operating income by roughly 240 bps, with EMEA logistics amplifying the effect.{" "}
-          <Badge tone="accent">[1]</Badge>{" "}
-          <Badge tone="violet">[2]</Badge>
+        <div className="max-w-[92%] text-sm leading-relaxed text-[var(--text-secondary)]">
+          FX translation reduced international operating income by roughly 240 bps, with EMEA
+          logistics amplifying the effect.{" "}
+          <span className="mx-0.5 inline-flex h-5 items-center rounded-md bg-[var(--accent-soft)] px-1.5 text-[11px] font-medium text-[var(--accent)]">
+            [2]
+          </span>
         </div>
-        <div className="rounded-[12px] border border-[var(--accent)]/20 bg-[var(--accent-soft)] p-3">
-          <p className="mono text-[10px] tracking-wider text-[var(--accent)] uppercase">
-            Document citation · Page 12 · § 2
+        <div className="rounded-lg border border-[var(--accent)]/25 bg-[var(--accent-soft)] p-3">
+          <p className="mono text-[10px] tracking-[0.14em] text-[var(--accent)] uppercase">
+            Document Citation · Page 12 · § 2
           </p>
           <p className="mt-2 text-xs text-[var(--text-secondary)]">
-            “International segment operating margins contracted 240 bps, driven primarily by FX translation variances…”
+            “International segment operating margins contracted 240 bps, driven primarily by FX
+            translation variances…”
           </p>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
 export function LandingPage() {
   const [tab, setTab] = useState("finance");
+  const scenario = SCENARIOS[tab];
 
   return (
-    <div className="folio-glow min-h-screen">
-      <header className="glass sticky top-0 z-40">
+    <div className="folio-atmosphere min-h-screen">
+      <header className="sticky top-0 z-40 border-b border-white/[0.05] bg-[#0D0D11]/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <div className="flex items-center gap-8">
             <Link href="/">
@@ -100,38 +140,48 @@ export function LandingPage() {
             </nav>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/sign-in" className="text-sm text-[var(--text-secondary)] hover:text-[var(--text)]">
-              Sign In
+            <Link
+              href="/login"
+              className="text-sm text-[var(--text-secondary)] hover:text-[var(--text)]"
+            >
+              Sign in
             </Link>
             <Link href="/try">
-              <Button size="sm">Try Free</Button>
+              <Button size="pill">Try it free</Button>
             </Link>
           </div>
         </div>
       </header>
 
-      <section id="overview" className="mx-auto max-w-6xl px-5 pt-20 pb-10 text-center">
-        <Badge tone="violet" className="mb-6">
-          Introducing Folio — grounded document answers
-        </Badge>
-        <h1 className="display mx-auto max-w-3xl text-5xl leading-[1.05] text-[var(--text)] md:text-6xl">
-          Ask the page.
-        </h1>
-        <p className="mx-auto mt-5 max-w-2xl text-base text-[var(--text-secondary)] md:text-lg">
-          Upload any PDF, DOCX, or TXT and get instant, grounded answers with page citations. Bring your own free
-          key for privacy and zero markup.
-        </p>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Link href="/try">
-            <Button size="lg">Try Folio</Button>
-          </Link>
-          <a href="#grounding">
-            <Button size="lg" variant="secondary">
-              View Features
-            </Button>
-          </a>
-        </div>
-        <HeroPreview />
+      <section id="overview" className="mx-auto max-w-6xl px-5 pt-20 pb-8 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <span className="mono inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-[11px] tracking-[0.12em] text-[var(--text-secondary)] uppercase">
+            <span className="live-dot h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
+            Deterministic Page Grounding Engine v2.4
+          </span>
+          <h1 className="display mx-auto mt-7 max-w-3xl text-5xl leading-[1.05] text-white md:text-6xl">
+            Ask the page.
+          </h1>
+          <p className="mx-auto mt-5 max-w-2xl text-base text-[var(--text-secondary)] md:text-lg">
+            Upload any PDF or research document. Receive precise answers backed by deterministic
+            bounding boxes and citations you can verify instantly.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <a href="#grounding">
+              <Button size="lg">How it works →</Button>
+            </a>
+            <Link href="/try">
+              <Button size="lg" variant="secondary">
+                Try it free
+              </Button>
+            </Link>
+          </div>
+        </motion.div>
+        <EnginePreview />
       </section>
 
       <section id="grounding" className="mx-auto max-w-6xl px-5 py-20">
@@ -141,87 +191,91 @@ export function LandingPage() {
         <div className="mt-10 grid gap-4 md:grid-cols-3">
           {[
             {
-              label: "Grounding",
-              title: "Verifiable citations",
-              body: "Every claim maps to a numbered passage with page and excerpt.",
+              n: "01",
+              label: "Reproducibility",
+              title: "Verifiable Grounding",
+              body: "Pixel-aware citations to PDF pages and passages—every claim maps to a source you can open.",
             },
             {
-              label: "Privacy",
-              title: "Zero raw-file retention",
-              body: "Uploaded bytes are discarded after extraction. Only chunks and vectors remain.",
+              n: "02",
+              label: "Security",
+              title: "Zero-Retention Privacy",
+              body: "Ephemeral in-memory vectorization. Raw files discarded after extraction. Zero model training on your data.",
             },
             {
-              label: "BYOK",
-              title: "Lightning BYOK engine",
-              body: "Use free keys from Groq, Cerebras, Novita, or Hugging Face.",
+              n: "03",
+              label: "Performance",
+              title: "Lightning BYOK Engine",
+              body: "Direct Groq & Cerebras LPUs with your own free keys. Typical streams above 400 tok/sec.",
             },
-          ].map((card) => (
-            <article
+          ].map((card, i) => (
+            <motion.article
               key={card.title}
-              className="rounded-[16px] border border-[var(--hairline)] bg-[var(--surface)] p-6"
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-40px" }}
+              transition={{ delay: i * 0.08, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+              className="surface-card p-6"
             >
-              <p className="mono text-[10px] tracking-[0.14em] text-[var(--accent)] uppercase">
-                {card.label}
+              <p className="mono text-[10px] tracking-[0.16em] text-[var(--accent)] uppercase">
+                {card.n} · {card.label}
               </p>
               <h3 className="mt-3 text-lg text-[var(--text)]">{card.title}</h3>
-              <p className="mt-2 text-sm text-[var(--text-secondary)]">{card.body}</p>
-            </article>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">
+                {card.body}
+              </p>
+            </motion.article>
           ))}
         </div>
       </section>
 
       <section id="cases" className="mx-auto max-w-6xl px-5 py-16">
         <h2 className="display text-center text-3xl">What you can ask Folio</h2>
-        <div className="mt-6 flex justify-center gap-2">
-          <Button
-            size="sm"
-            variant={tab === "finance" ? "primary" : "dark"}
-            onClick={() => setTab("finance")}
-          >
-            Financial & Strategy
-          </Button>
-          <Button
-            size="sm"
-            variant={tab === "research" ? "primary" : "dark"}
-            onClick={() => setTab("research")}
-          >
-            Technical & Research
-          </Button>
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          {Object.entries(SCENARIOS).map(([key, value]) => (
+            <Button
+              key={key}
+              size="pill"
+              variant={tab === key ? "primary" : "dark"}
+              onClick={() => setTab(key)}
+            >
+              {value.label}
+            </Button>
+          ))}
         </div>
-        <div className="glass mt-8 grid gap-0 overflow-hidden rounded-[20px] md:grid-cols-2">
-          <div className="border-b border-[var(--hairline)] p-6 md:border-r md:border-b-0">
-            <p className="text-xs text-[var(--text-muted)]">You</p>
-            <p className="mt-3 text-sm">
-              {tab === "finance"
-                ? "Summarize the key drivers of margin contraction in the international segment."
-                : "Which methods does the paper use for multi-head attention?"}
+        <div className="mt-8 grid overflow-hidden rounded-xl border border-white/[0.08] bg-[var(--surface)] md:grid-cols-2">
+          <div className="border-b border-white/[0.06] p-6 md:border-r md:border-b-0">
+            <p className="mono text-[10px] tracking-[0.14em] text-[var(--text-muted)] uppercase">
+              Prompt
+            </p>
+            <p className="mt-3 text-sm text-[var(--text)]">{scenario.prompt}</p>
+            <p className="mono mt-4 text-[11px] text-[var(--accent)]">
+              Latency · {scenario.latency}
             </p>
           </div>
           <div className="p-6">
-            <p className="text-xs text-[var(--accent)]">Source · Page {tab === "finance" ? "14" : "4"}</p>
-            <p className="mt-3 text-sm text-[var(--text-secondary)]">
-              {tab === "finance"
-                ? "International segment operating margins contracted 240 bps, driven primarily by FX translation variances and elevated logistics costs in EMEA."
-                : "Multi-head attention linearly projects queries, keys, and values h times with different learned projections, then concatenates."}
+            <p className="mono text-[10px] tracking-[0.14em] text-[var(--accent)] uppercase">
+              Cited excerpt · {scenario.page}
+            </p>
+            <p className="mt-3 text-sm leading-relaxed text-[var(--text-secondary)]">
+              “{scenario.excerpt}”
             </p>
           </div>
         </div>
       </section>
 
       <section className="mx-auto max-w-6xl px-5 py-10">
-        <div className="grid gap-6 rounded-[16px] border border-[var(--hairline)] bg-[var(--surface)] px-6 py-8 text-center md:grid-cols-3 md:text-left">
-          <div>
-            <p className="display text-3xl text-[var(--text)]">10 MB</p>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">per file upload</p>
-          </div>
-          <div>
-            <p className="display text-3xl text-[var(--text)]">100</p>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">pages per document</p>
-          </div>
-          <div>
-            <p className="display text-3xl text-[var(--text)]">200</p>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">questions a day</p>
-          </div>
+        <div className="grid gap-8 rounded-xl border border-white/[0.08] bg-[var(--surface)] px-8 py-10 text-center md:grid-cols-3 md:text-left">
+          {[
+            { value: "10 MB", label: "per file upload" },
+            { value: "100", label: "pages parsed per doc" },
+            { value: "200", label: "daily queries included" },
+          ].map((stat) => (
+            <div key={stat.label}>
+              <p className="display text-4xl text-[var(--text)]">{stat.value}</p>
+              <p className="mt-2 text-sm text-[var(--text-secondary)]">{stat.label}</p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -238,23 +292,27 @@ export function LandingPage() {
         <h2 className="display text-4xl md:text-5xl">Start with a document.</h2>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link href="/try">
-            <Button size="lg">Try it Free</Button>
+            <Button size="lg">Try it free</Button>
           </Link>
-          <Link href="/sign-in">
+          <a href="#overview">
             <Button size="lg" variant="secondary">
-              Sign in
+              View sample citations
             </Button>
-          </Link>
+          </a>
         </div>
       </section>
 
-      <footer className="border-t border-[var(--hairline)]">
+      <footer className="border-t border-white/[0.06]">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-5 py-8 md:flex-row md:items-center md:justify-between">
           <Logo />
           <div className="flex flex-wrap gap-5 text-sm text-[var(--text-secondary)]">
             <Link href="/privacy">Privacy</Link>
             <Link href="/terms">Terms</Link>
-            <a href="https://github.com/bilalTheDev/Folio" target="_blank" rel="noreferrer">
+            <a
+              href="https://github.com/bilalTheDev/Folio"
+              target="_blank"
+              rel="noreferrer"
+            >
               GitHub
             </a>
           </div>

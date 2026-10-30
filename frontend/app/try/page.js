@@ -9,12 +9,12 @@ export const metadata = {
 export default function TryPage() {
   return (
     <div className="min-h-screen bg-[var(--bg)]">
-      <div className="flex items-center justify-between border-b border-[var(--hairline)] px-5 py-3">
+      <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3">
         <p className="text-sm text-[var(--text-secondary)]">
           Trial workspace · sample document · sign up to upload your own
         </p>
         <div className="flex gap-2">
-          <Link href="/sign-up">
+          <Link href="/login">
             <Button size="sm">Sign up</Button>
           </Link>
           <Link href="/">
@@ -24,7 +24,7 @@ export default function TryPage() {
           </Link>
         </div>
       </div>
-      <WorkspaceShell />
+      <WorkspaceShell compactChrome />
     </div>
   );
 }

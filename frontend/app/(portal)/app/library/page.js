@@ -26,7 +26,7 @@ export default function LibraryPage() {
           <Link
             key={doc.id}
             href="/app"
-            className="flex items-center justify-between rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-4 hover:border-[var(--hairline-strong)]"
+            className="flex items-center justify-between rounded-xl border border-white/[0.07] bg-[var(--surface)] px-4 py-4 transition hover:border-white/[0.12]"
           >
             <div>
               <p className="text-sm text-[var(--text)]">{doc.title}</p>

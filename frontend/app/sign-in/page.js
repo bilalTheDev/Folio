@@ -1,9 +1,5 @@
-import { AuthCard } from "@/components/auth/AuthCard";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Sign in · Folio",
-};
-
-export default function SignInPage() {
-  return <AuthCard mode="sign-in" />;
+export default function SignInAliasPage() {
+  redirect("/login");
 }

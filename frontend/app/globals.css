@@ -1,46 +1,52 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #0a0a0c;
-  --bg-elevated: #111114;
-  --surface: #16161b;
-  --surface-2: #1c1c22;
-  --hairline: rgba(255, 255, 255, 0.08);
-  --hairline-strong: rgba(255, 255, 255, 0.14);
-  --text: #f4f4f8;
-  --text-secondary: #9a9aab;
-  --text-muted: #6e6e7c;
-  --accent: #3ddc97;
-  --accent-strong: #2bc482;
-  --accent-soft: rgba(61, 220, 151, 0.12);
-  --accent-glow: rgba(61, 220, 151, 0.35);
-  --violet: #8b7cff;
-  --violet-soft: rgba(139, 124, 255, 0.16);
-  --danger: #ff6b7f;
-  --danger-soft: rgba(255, 107, 127, 0.12);
-  --warning: #f5b94e;
-  --radius-sm: 10px;
-  --radius: 14px;
-  --radius-lg: 20px;
-  --shadow-soft: 0 12px 40px rgba(0, 0, 0, 0.45);
-  --font-sans: var(--font-inter), system-ui, sans-serif;
-  --font-display: var(--font-fraunces), Georgia, serif;
+  /* Canvas */
+  --bg: #0d0d11;
+  --bg-chrome: #121216;
+  --surface-low: #131318;
+  --surface: #18181d;
+  --surface-elevated: #22222a;
+
+  /* Text */
+  --text: #f4f4f6;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+
+  /* Borders */
+  --hairline: rgba(255, 255, 255, 0.06);
+  --hairline-strong: rgba(255, 255, 255, 0.12);
+
+  /* Mineral Emerald */
+  --accent: #00d59d;
+  --accent-hover: #059669;
+  --accent-soft: rgba(0, 213, 157, 0.15);
+  --accent-ink: #061b14;
+
+  /* Status / hardware (sparingly) */
+  --danger: #ef4444;
+  --danger-soft: rgba(239, 68, 68, 0.12);
+  --cyan: #38bdf8;
+  --violet-muted: #a78bfa;
+
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --shadow-2xl: 0 24px 64px rgba(0, 0, 0, 0.55);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-newsreader), Georgia, "Times New Roman", serif;
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @theme inline {
   --color-bg: var(--bg);
-  --color-bg-elevated: var(--bg-elevated);
   --color-surface: var(--surface);
-  --color-surface-2: var(--surface-2);
-  --color-hairline: var(--hairline);
   --color-text: var(--text);
-  --color-text-secondary: var(--text-secondary);
-  --color-text-muted: var(--text-muted);
   --color-accent: var(--accent);
-  --color-accent-strong: var(--accent-strong);
-  --color-violet: var(--violet);
-  --color-danger: var(--danger);
   --font-sans: var(--font-sans);
   --font-display: var(--font-display);
   --font-mono: var(--font-mono);
@@ -97,25 +103,68 @@ select {
   }
 }
 
-.folio-glow {
-  background:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(139, 124, 255, 0.18), transparent 55%),
-    radial-gradient(ellipse 50% 40% at 80% 20%, rgba(61, 220, 151, 0.08), transparent 50%),
-    var(--bg);
-}
-
-.glass {
-  background: rgba(22, 22, 27, 0.72);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--hairline);
-}
-
 .display {
   font-family: var(--font-display);
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
 }
 
 .mono {
   font-family: var(--font-mono);
+}
+
+.folio-atmosphere {
+  background:
+    radial-gradient(circle at 50% 12%, rgba(0, 213, 157, 0.07) 0%, rgba(13, 13, 17, 0) 55%),
+    radial-gradient(ellipse 70% 40% at 50% -5%, rgba(255, 255, 255, 0.04), transparent 60%),
+    var(--bg);
+}
+
+.folio-auth-glow {
+  background:
+    radial-gradient(circle at 50% 40%, rgba(0, 213, 157, 0.06) 0%, rgba(13, 13, 17, 0) 70%),
+    var(--bg);
+}
+
+.hairline {
+  border: 1px solid var(--hairline-strong);
+}
+
+.surface-card {
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-lg);
+}
+
+.emerald-glow {
+  box-shadow: 0 0 0 1px rgba(0, 213, 157, 0.35), 0 0 24px rgba(0, 213, 157, 0.18);
+}
+
+@keyframes folio-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.live-dot {
+  animation: folio-pulse 2.4s var(--ease) infinite;
+}
+
+@keyframes folio-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: folio-fade-up 0.55s var(--ease) both;
 }

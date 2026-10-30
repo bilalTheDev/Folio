@@ -82,13 +82,15 @@ Deploy the repository root to Vercel. `vercel.json` builds the Next.js app in `f
 
 Backend: document ingestion API (validate → extract → chunk → embed → store) with Clerk JWT auth.
 
-Frontend screens (design-matched, mock data where APIs are not wired yet):
-- `/` landing
-- `/sign-in`, `/sign-up`
+Frontend (Quiet Light / Mineral Emerald system from Figma + design prompt):
+- `/` editorial landing with ambient emerald atmosphere
+- `/login`, `/sign-up` distraction-free auth
 - `/try` trial workspace
-- `/app` chat workspace with sources
-- `/app/settings` account & BYOK preferences
-- `/app/admin` organization admin portal
+- `/app` (alias `/workspace`) citation-synced chat workspace
+- `/app/settings` (alias `/settings`) BYOK + privacy controls
+- `/app/admin` (alias `/admin`) org admin portal
 - `/app/library` document vault
+
+Typography: Newsreader (display), Inter (UI), JetBrains Mono (metadata). Primary accent `#00D59D` on `#061B14` ink.
 
 Next: retrieval + SSE generation (Phase 2), then wire UI to live APIs.
