@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     max_file_mb: int = 10
     max_pages: int = 100
     max_documents_per_user: int = 20
+    max_chunks_per_document: int = 50
     daily_question_limit: int = 200
     uploads_per_hour: int = 10
 

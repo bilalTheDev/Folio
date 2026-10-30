@@ -48,6 +48,16 @@ uvicorn backend.app.main:app --reload --app-dir ..
 
 Health check (with the app running): `GET /api/health`.
 
+### Database migrations
+
+With `DATABASE_URL` set to your Neon connection string:
+
+```bash
+python db/migrate.py
+```
+
+This applies SQL files in `db/migrations/` (pgvector extension, users, documents, chunks, and related tables).
+
 ### Frontend
 
 ```bash
@@ -68,6 +78,6 @@ Deploy the repository root to Vercel. `vercel.json` builds the Next.js app in `f
 
 ## Status
 
-**Phase 0: project skeleton**
+**Phase 1: ingestion (in progress on `develop`)**
 
-Infrastructure and tooling only. RAG, database queries, authentication, and product UI are not implemented yet.
+Document upload pipeline is implemented on the backend: validate → extract → chunk → embed → store, plus Clerk JWT auth for protected document routes. Retrieval, chat UI, and provider keys come next.

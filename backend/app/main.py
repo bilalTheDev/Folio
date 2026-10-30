@@ -3,15 +3,24 @@
 from __future__ import annotations
 
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.config import get_settings
-from backend.app.routes import health
+from backend.app.db import dispose_engine
+from backend.app.routes import documents, health
 from backend.app.security.logging_filter import install_logging_filter
 
 APP_VERSION = "0.1.0"
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """App lifespan hooks."""
+    yield
+    await dispose_engine()
 
 
 def create_app() -> FastAPI:
@@ -29,6 +38,7 @@ def create_app() -> FastAPI:
         docs_url="/docs" if is_development else None,
         redoc_url="/redoc" if is_development else None,
         openapi_url="/openapi.json" if is_development else None,
+        lifespan=lifespan,
     )
 
     app.add_middleware(
@@ -39,9 +49,8 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Routes are registered under /api so local tests and Vercel full-path
-    # requests both hit GET /api/health.
     app.include_router(health.router, prefix="/api")
+    app.include_router(documents.router, prefix="/api")
 
     return app
 

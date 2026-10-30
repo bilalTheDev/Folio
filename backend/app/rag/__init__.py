@@ -1,1 +1,1 @@
-"""RAG pipeline package. Filled in a later phase."""
+"""RAG pipeline: extract, chunk, embed, and store documents."""
