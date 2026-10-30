@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { apiFetch } from "@/lib/api";
+import { uploadDocument } from "@/lib/api/documents";
 
 const STEPS = ["validating", "extracting", "embedding", "ready"];
 
@@ -46,49 +46,32 @@ export default function UploadPage() {
     setError("");
     setMode("");
 
-    const form = new FormData();
-    form.append("file", file);
-
     setStatus("validating");
     try {
-      const res = await apiFetch("/documents", {
-        method: "POST",
-        body: form,
-      });
-
-      if (res.status === 401 || res.status === 403) {
+      setStatus("extracting");
+      const doc = await uploadDocument(file);
+      setMode("api");
+      setStatus("embedding");
+      await new Promise((r) => setTimeout(r, 150));
+      setStatus("ready");
+      router.push(doc?.id ? `/app?doc=${doc.id}` : "/app");
+      return;
+    } catch (err) {
+      const message = err?.message || "Upload failed";
+      if (/sign in|unauthorized|401|403/i.test(message)) {
         setMode("demo");
         await runDemoSteps();
         setError("Sign in required for live ingest — demo indexing finished.");
         return;
       }
-
-      if (!res.ok) {
-        let message = `Upload failed (${res.status})`;
-        try {
-          const payload = await res.json();
-          message = payload?.detail?.message || message;
-        } catch {
-          // keep default
-        }
-        setStatus("idle");
-        setError(message);
+      if (/unreachable|failed to fetch|network/i.test(message)) {
+        setMode("demo");
+        await runDemoSteps();
+        setError("API unreachable — demo indexing finished.");
         return;
       }
-
-      setMode("api");
-      setStatus("extracting");
-      await new Promise((r) => setTimeout(r, 200));
-      setStatus("embedding");
-      await new Promise((r) => setTimeout(r, 200));
-      setStatus("ready");
-      const doc = await res.json();
-      router.push(doc?.id ? `/app?doc=${doc.id}` : "/app");
-      return;
-    } catch {
-      setMode("demo");
-      await runDemoSteps();
-      setError("API unreachable — demo indexing finished.");
+      setStatus("idle");
+      setError(message);
     }
   }
 

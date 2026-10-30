@@ -237,11 +237,26 @@ export function SettingsPage() {
               {[
                 { id: "dark", label: "Quiet Dark" },
                 { id: "light", label: "Quiet Light" },
+                { id: "system", label: "System" },
               ].map((item) => (
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setTheme(item.id)}
+                  onClick={() => {
+                    setTheme(item.id);
+                    try {
+                      window.localStorage.setItem("folio_theme", item.id);
+                      const resolved =
+                        item.id === "system"
+                          ? window.matchMedia("(prefers-color-scheme: light)").matches
+                            ? "light"
+                            : "dark"
+                          : item.id;
+                      document.documentElement.setAttribute("data-theme", resolved);
+                    } catch {
+                      // ignore storage failures
+                    }
+                  }}
                   className={`rounded-lg border px-3 py-3 text-sm transition ${
                     theme === item.id
                       ? "border-[var(--accent)]/40 bg-[var(--accent-soft)] text-[var(--accent)]"

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { DOCUMENTS } from "@/lib/mock-data";
-import { apiFetch } from "@/lib/api";
+import { listDocuments } from "@/lib/api/documents";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 
@@ -24,23 +24,20 @@ export default function LibraryPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await apiFetch("/documents");
-        if (res.ok) {
-          const data = await res.json();
-          if (!cancelled) {
-            setDocs(
-              (data.items || []).map((item) => ({
-                id: item.id,
-                title: item.title,
-                pages: item.page_count,
-                updated: formatUpdated(item.created_at),
-                status: item.status,
-              })),
-            );
-            setSource("api");
-          }
-          return;
+        const data = await listDocuments();
+        if (!cancelled) {
+          setDocs(
+            (data.items || []).map((item) => ({
+              id: item.id,
+              title: item.title,
+              pages: item.page_count,
+              updated: formatUpdated(item.created_at),
+              status: item.status,
+            })),
+          );
+          setSource("api");
         }
+        return;
       } catch {
         // fall through to mock
       }

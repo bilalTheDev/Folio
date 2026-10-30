@@ -7,7 +7,6 @@ import {
   IconArchive,
   IconFileText,
   IconSettings,
-  IconShield,
 } from "@/components/icons/NavIcons";
 
 const LINKS = [
@@ -34,12 +33,6 @@ const LINKS = [
     label: "Account & Settings",
     icon: IconSettings,
     match: (p) => p.startsWith("/app/settings") || p === "/settings",
-  },
-  {
-    href: "/app/admin",
-    label: "Admin Portal",
-    icon: IconShield,
-    match: (p) => p.startsWith("/app/admin") || p === "/admin",
   },
 ];
 

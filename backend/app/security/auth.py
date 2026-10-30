@@ -8,7 +8,7 @@ from typing import Any
 
 import httpx
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import PyJWKClient
 from sqlalchemy import select
@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.config import Settings, get_settings
 from backend.app.db import get_session
+from backend.app.errors import FolioError, UnauthorizedError
 from backend.app.models import User
 
 _bearer = HTTPBearer(auto_error=False)
@@ -42,31 +43,30 @@ def _get_jwks_client(jwks_url: str) -> PyJWKClient:
 def decode_clerk_token(token: str, settings: Settings) -> dict[str, Any]:
     """Verify a Clerk session JWT and return its claims."""
     if not settings.clerk_jwks_url:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={"code": "auth_not_configured", "message": "CLERK_JWKS_URL is not set"},
+        raise FolioError(
+            "auth_not_configured",
+            "CLERK_JWKS_URL is not set",
+            status_code=503,
         )
+
+    decode_kwargs: dict[str, Any] = {
+        "algorithms": ["RS256"],
+        "options": {"require": ["exp", "sub"]},
+    }
+    if settings.clerk_jwt_audience:
+        decode_kwargs["audience"] = settings.clerk_jwt_audience
+    if settings.clerk_jwt_issuer:
+        decode_kwargs["issuer"] = settings.clerk_jwt_issuer
 
     try:
         jwks = _get_jwks_client(settings.clerk_jwks_url)
         signing_key = jwks.get_signing_key_from_jwt(token)
-        claims = jwt.decode(
-            token,
-            signing_key.key,
-            algorithms=["RS256"],
-            options={"require": ["exp", "sub"]},
-        )
+        claims = jwt.decode(token, signing_key.key, **decode_kwargs)
     except jwt.PyJWTError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "invalid_token", "message": "Invalid or expired session"},
-        ) from exc
+        raise UnauthorizedError("Invalid or expired session", code="invalid_token") from exc
 
     if claims.get("exp", 0) < time.time():
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "invalid_token", "message": "Session expired"},
-        )
+        raise UnauthorizedError("Session expired", code="invalid_token")
     return claims
 
 
@@ -95,10 +95,7 @@ def claims_to_auth_user(claims: dict[str, Any]) -> AuthUser:
     """Map Clerk JWT claims to AuthUser."""
     sub = claims.get("sub")
     if not sub:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "invalid_token", "message": "Token missing subject"},
-        )
+        raise UnauthorizedError("Token missing subject", code="invalid_token")
     email = (
         claims.get("email")
         or claims.get("primary_email_address")
@@ -114,12 +111,7 @@ async def get_current_user(
 ) -> AuthUser:
     """FastAPI dependency: require a valid Clerk Bearer token (no DB)."""
     if credentials is None or credentials.scheme.lower() != "bearer":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "unauthorized", "message": "Sign in required"},
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
+        raise UnauthorizedError("Sign in required")
     claims = decode_clerk_token(credentials.credentials, settings)
     return claims_to_auth_user(claims)
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,7 +13,7 @@ from backend.app.config import Settings, get_settings
 from backend.app.db import get_session
 from backend.app.models import ProviderKey, User
 from backend.app.security.auth import AuthUser, get_current_db_user
-from backend.app.security.crypto import CryptoError, decrypt_secret, encrypt_secret
+from backend.app.services import keys as keys_service
 from backend.app.services.usage import get_or_create_usage
 
 router = APIRouter(prefix="/me", tags=["me"])
@@ -107,35 +107,13 @@ async def remember_key(
     session: AsyncSession = Depends(get_session),
     settings: Settings = Depends(get_settings),
 ) -> Response:
-    try:
-        ciphertext, nonce = encrypt_secret(body.key, settings.folio_encryption_key)
-    except CryptoError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={"code": "crypto_unavailable", "message": str(exc)},
-        ) from exc
-
-    result = await session.execute(
-        select(ProviderKey).where(
-            ProviderKey.user_id == user.id, ProviderKey.provider == body.provider
-        )
+    await keys_service.remember_provider_key(
+        session,
+        user_id=user.id,
+        provider=body.provider,
+        key=body.key,
+        settings=settings,
     )
-    existing = result.scalar_one_or_none()
-    last4 = body.key[-4:]
-    if existing:
-        existing.key_ciphertext = ciphertext
-        existing.key_nonce = nonce
-        existing.key_last4 = last4
-    else:
-        session.add(
-            ProviderKey(
-                user_id=user.id,
-                provider=body.provider,
-                key_ciphertext=ciphertext,
-                key_nonce=nonce,
-                key_last4=last4,
-            )
-        )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -149,46 +127,5 @@ async def delete_key(
     user: AuthUser = Depends(get_current_db_user),
     session: AsyncSession = Depends(get_session),
 ) -> Response:
-    result = await session.execute(
-        select(ProviderKey).where(
-            ProviderKey.user_id == user.id, ProviderKey.provider == provider
-        )
-    )
-    row = result.scalar_one_or_none()
-    if row:
-        await session.delete(row)
+    await keys_service.forget_provider_key(session, user_id=user.id, provider=provider)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-async def resolve_provider_key(
-    session: AsyncSession,
-    *,
-    user_id: str,
-    provider: str,
-    header_key: str | None,
-    settings: Settings,
-) -> str:
-    """Prefer request header key; fall back to decrypted remembered key."""
-    if header_key:
-        return header_key
-    result = await session.execute(
-        select(ProviderKey).where(
-            ProviderKey.user_id == user_id, ProviderKey.provider == provider
-        )
-    )
-    row = result.scalar_one_or_none()
-    if row is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "invalid_key",
-                "message": "Provide X-Provider-Key or remember a key in Settings",
-            },
-        )
-    try:
-        return decrypt_secret(row.key_ciphertext, row.key_nonce, settings.folio_encryption_key)
-    except CryptoError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={"code": "crypto_unavailable", "message": str(exc)},
-        ) from exc

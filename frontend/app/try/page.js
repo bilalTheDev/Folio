@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
 import { Button } from "@/components/ui/Button";
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/lib/api/client";
 
 const FALLBACK_SUGGESTED = [
   "What drove operating margin contraction in the international segment?",

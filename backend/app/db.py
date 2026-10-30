@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import ssl
 from collections.abc import AsyncGenerator
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -10,6 +12,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import NullPool
 
 from backend.app.config import Settings, get_settings
 
@@ -18,25 +21,45 @@ _session_factory: async_sessionmaker[AsyncSession] | None = None
 
 
 def normalize_database_url(url: str) -> str:
-    """Convert a Neon URL to an asyncpg SQLAlchemy URL."""
+    """Convert a Neon/libpq URL to an asyncpg SQLAlchemy URL.
+
+    Drops libpq-only query params (sslmode, channel_binding) that asyncpg
+    rejects; TLS is enabled via connect_args instead.
+    """
     if url.startswith("postgres://"):
-        return url.replace("postgres://", "postgresql+asyncpg://", 1)
+        url = url.replace("postgres://", "postgresql://", 1)
     if url.startswith("postgresql://"):
-        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
-    return url
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+    parsed = urlparse(url)
+    filtered = [
+        (key, value)
+        for key, value in parse_qsl(parsed.query, keep_blank_values=True)
+        if key.lower() not in {"sslmode", "channel_binding"}
+    ]
+    return urlunparse(parsed._replace(query=urlencode(filtered)))
 
 
 def create_engine_from_settings(settings: Settings) -> AsyncEngine:
-    """Create an async SQLAlchemy engine from DATABASE_URL."""
-    url = settings.database_url
+    """Create an async SQLAlchemy engine from DATABASE_URL (pooled preferred)."""
+    url = settings.app_database_url
     if not url:
         raise ValueError("DATABASE_URL is not set")
+
+    connect_args: dict = {"ssl": ssl.create_default_context()}
+    if settings.on_vercel:
+        return create_async_engine(
+            normalize_database_url(url),
+            poolclass=NullPool,
+            connect_args=connect_args,
+        )
 
     return create_async_engine(
         normalize_database_url(url),
         pool_pre_ping=True,
         pool_size=5,
         max_overflow=5,
+        connect_args=connect_args,
     )
 
 

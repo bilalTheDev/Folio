@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-import os
 import threading
 from functools import lru_cache
 
 from fastembed import TextEmbedding
+
+from backend.app.config import get_settings
 
 EMBED_MODEL = "BAAI/bge-small-en-v1.5"
 EMBED_DIM = 384
@@ -17,11 +18,14 @@ _lock = threading.Lock()
 
 def _cache_dir() -> str | None:
     """On Vercel, keep the model under /tmp so it stays out of the bundle."""
-    if os.getenv("VERCEL") == "1":
+    settings = get_settings()
+    if settings.on_vercel:
         path = "/tmp/fastembed"
+        import os
+
         os.makedirs(path, exist_ok=True)
         return path
-    return os.getenv("FOLIO_EMBED_CACHE_DIR")
+    return settings.folio_embed_cache_dir or None
 
 
 @lru_cache(maxsize=1)

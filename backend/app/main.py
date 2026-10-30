@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from backend.app.api import documents, health, me, providers, sample, threads
+from backend.app.api.limits import PublicRateLimitMiddleware
 from backend.app.config import get_settings
 from backend.app.db import dispose_engine
-from backend.app.routes import documents, health, me, providers, sample, threads
-from backend.app.routes.limits import PublicRateLimitMiddleware
+from backend.app.errors import register_exception_handlers
 from backend.app.security.logging_filter import install_logging_filter
 
 APP_VERSION = "0.1.0"
@@ -27,20 +27,20 @@ async def lifespan(_app: FastAPI):
 def create_app() -> FastAPI:
     """Build and return the Folio FastAPI application."""
     settings = get_settings()
-    on_vercel = os.getenv("VERCEL") == "1"
-    is_development = settings.folio_env == "development"
 
     install_logging_filter()
 
     app = FastAPI(
         title="Folio API",
         version=APP_VERSION,
-        root_path="/api" if on_vercel else "",
-        docs_url="/docs" if is_development else None,
-        redoc_url="/redoc" if is_development else None,
-        openapi_url="/openapi.json" if is_development else None,
+        root_path="/api" if settings.on_vercel else "",
+        docs_url="/docs" if settings.is_development else None,
+        redoc_url="/redoc" if settings.is_development else None,
+        openapi_url="/openapi.json" if settings.is_development else None,
         lifespan=lifespan,
     )
+
+    register_exception_handlers(app)
 
     app.add_middleware(
         CORSMiddleware,

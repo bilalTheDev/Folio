@@ -48,12 +48,24 @@ uvicorn backend.app.main:app --reload --app-dir ..
 
 Health check (with the app running): `GET /api/health`.
 
+### Neon Postgres
+
+This repo is linked to a Neon project via `.neon` + `neon.ts`. `neon deploy` / `neon env pull` write `DATABASE_URL` (pooled), `DATABASE_URL_UNPOOLED` (direct), and `NEON_BRANCH` into `.env.local`.
+
+```bash
+neon deploy
+npm run migrate   # uses DATABASE_URL_UNPOOLED when present
+```
+
+The FastAPI app reads those vars (SQLAlchemy + asyncpg, SSL on). Prefer the pooled URL for app traffic and the unpooled URL for migrations.
+
 ### Database migrations
 
-With `DATABASE_URL` set to your Neon connection string:
+With `DATABASE_URL` / `DATABASE_URL_UNPOOLED` set (from Neon):
 
 ```bash
 python db/migrate.py
+# or: npm run migrate
 ```
 
 This applies SQL files in `db/migrations/` (pgvector extension, users, documents, chunks, and related tables).

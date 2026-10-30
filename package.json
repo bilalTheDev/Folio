@@ -1,0 +1,14 @@
+{
+  "name": "folio",
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix frontend run build",
+    "dev": "npm --prefix frontend run dev",
+    "migrate": "python db/migrate.py",
+    "start:api": "uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000"
+  },
+  "dependencies": {
+    "@neon/config": "^1.9.6",
+    "@neon/env": "^1.6.6"
+  }
+}

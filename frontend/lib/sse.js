@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/lib/api/client";
 
 /**
  * Parse a Server-Sent Events stream from a fetch Response.

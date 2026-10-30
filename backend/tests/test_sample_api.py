@@ -70,4 +70,4 @@ async def test_sample_daily_limit() -> None:
             headers=headers,
         )
     assert limited.status_code == 429
-    assert limited.json()["detail"]["code"] == "daily_limit"
+    assert limited.json()["error"]["code"] == "daily_limit"

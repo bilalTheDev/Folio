@@ -9,7 +9,6 @@ const ACTIONS = [
   { id: "upload", label: "Upload a document", href: "/app/documents/new" },
   { id: "history", label: "Chat history", href: "/app/history" },
   { id: "settings", label: "Account & Settings", href: "/app/settings" },
-  { id: "admin", label: "Admin Portal", href: "/app/admin" },
   { id: "home", label: "Marketing home", href: "/" },
 ];
 

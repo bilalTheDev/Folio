@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { apiFetch } from "@/lib/api";
+import { exportThread, listThreads } from "@/lib/api/threads";
 
 const DEMO_THREADS = [
   {
@@ -45,30 +45,31 @@ export default function HistoryPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await apiFetch("/threads");
-        if (!res.ok) return;
-        const data = await res.json();
+        const data = await listThreads(query.trim() ? { q: query.trim() } : {});
         if (cancelled) return;
         setThreads(
           (data.items || []).map((item) => ({
             id: item.id,
             title: item.title,
-            document: item.document_id ? `Document ${String(item.document_id).slice(0, 8)}` : "Deleted document",
+            document: item.document_id
+              ? `Document ${String(item.document_id).slice(0, 8)}`
+              : "Deleted document",
             updated: formatUpdated(item.updated_at),
             canExport: true,
           })),
         );
         setSource("api");
       } catch {
-        // keep demo threads
+        // keep demo threads until Clerk session works
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [query]);
 
   const filtered = useMemo(() => {
+    if (source === "api") return threads;
     const q = query.trim().toLowerCase();
     if (!q) return threads;
     return threads.filter(
@@ -76,7 +77,7 @@ export default function HistoryPage() {
         item.title.toLowerCase().includes(q) ||
         item.document.toLowerCase().includes(q),
     );
-  }, [query, threads]);
+  }, [query, threads, source]);
 
   const grouped = useMemo(() => {
     const map = new Map();
@@ -87,12 +88,10 @@ export default function HistoryPage() {
     return [...map.entries()];
   }, [filtered]);
 
-  async function exportThread(threadId) {
+  async function handleExport(threadId) {
     setExportingId(threadId);
     try {
-      const res = await apiFetch(`/threads/${threadId}/export`);
-      if (!res.ok) throw new Error("Export failed");
-      const blob = await res.blob();
+      const blob = await exportThread(threadId);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -100,7 +99,7 @@ export default function HistoryPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      // ignore — demo threads have no server export
+      // demo threads have no server export
     } finally {
       setExportingId(null);
     }
@@ -112,7 +111,7 @@ export default function HistoryPage() {
         <div>
           <h1 className="display text-3xl">Chat history</h1>
           <p className="mt-2 text-sm text-[var(--text-secondary)]">
-            Threads grouped by document. Search titles and source names.
+            Threads grouped by document. Search titles and message text.
             {source === "demo" ? " Demo history until Clerk session is connected." : null}
           </p>
         </div>
@@ -152,7 +151,7 @@ export default function HistoryPage() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => exportThread(thread.id)}
+                        onClick={() => handleExport(thread.id)}
                         disabled={exportingId === thread.id}
                       >
                         {exportingId === thread.id ? "…" : "Export"}

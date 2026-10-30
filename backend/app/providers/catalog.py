@@ -7,7 +7,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-PROVIDERS_PATH = Path(__file__).resolve().parent / "config" / "providers.json"
+PROVIDERS_PATH = Path(__file__).resolve().parent.parent / "config" / "providers.json"
 
 
 @lru_cache

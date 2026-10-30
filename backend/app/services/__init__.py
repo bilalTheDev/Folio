@@ -1,1 +1,1 @@
-"""Domain services."""
+"""Business logic services for Folio."""

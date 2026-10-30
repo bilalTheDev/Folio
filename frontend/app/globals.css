@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-:root {
+:root,
+[data-theme="dark"] {
   /* Canvas */
   --bg: #0d0d11;
   --bg-chrome: #121216;
@@ -40,6 +41,26 @@
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-theme="light"] {
+  --bg: #f7f7f5;
+  --bg-chrome: #efefec;
+  --surface-low: #f2f2ef;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --text: #141418;
+  --text-secondary: #52525b;
+  --text-muted: #71717a;
+  --hairline: rgba(13, 13, 17, 0.08);
+  --hairline-strong: rgba(13, 13, 17, 0.14);
+  --accent: #059669;
+  --accent-hover: #047857;
+  --accent-soft: rgba(5, 150, 105, 0.12);
+  --accent-ink: #ecfdf5;
+  --danger: #dc2626;
+  --danger-soft: rgba(220, 38, 38, 0.1);
+  --shadow-2xl: 0 24px 64px rgba(20, 20, 24, 0.12);
 }
 
 @theme inline {

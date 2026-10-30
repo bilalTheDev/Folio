@@ -72,7 +72,7 @@ async def test_upload_success(app, auth_user: AuthUser) -> None:
     )
 
     with patch(
-        "backend.app.routes.documents.ingest_document",
+        "backend.app.services.documents.ingest_document",
         new=AsyncMock(return_value=doc),
     ):
         transport = ASGITransport(app=app)
@@ -92,7 +92,7 @@ async def test_upload_success(app, auth_user: AuthUser) -> None:
 @pytest.mark.asyncio
 async def test_upload_too_large_maps_error(app) -> None:
     with patch(
-        "backend.app.routes.documents.ingest_document",
+        "backend.app.services.documents.ingest_document",
         new=AsyncMock(side_effect=IngestError("too_large", "File exceeds the 10 MB limit.")),
     ):
         transport = ASGITransport(app=app)
@@ -104,4 +104,4 @@ async def test_upload_too_large_maps_error(app) -> None:
             )
 
     assert response.status_code == 413
-    assert response.json()["detail"]["code"] == "too_large"
+    assert response.json()["error"]["code"] == "too_large"
