@@ -130,6 +130,10 @@ class Message(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
+    citations: Mapped[list[Citation]] = relationship(
+        back_populates="message", cascade="all, delete-orphan"
+    )
+
 
 class Citation(Base):
     __tablename__ = "citations"
@@ -147,6 +151,8 @@ class Citation(Base):
     page: Mapped[int] = mapped_column(Integer, nullable=False)
     excerpt: Mapped[str] = mapped_column(Text, nullable=False)
     score: Mapped[float] = mapped_column(Float, nullable=False)
+
+    message: Mapped[Message] = relationship(back_populates="citations")
 
 
 class ProviderKey(Base):

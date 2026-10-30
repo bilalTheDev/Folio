@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Toggle } from "@/components/ui/Toggle";
+import { getProviderKey, saveProviderKey } from "@/lib/api";
 
 const PROVIDERS = [
   { id: "groq", label: "Groq", meta: "38ms TTFT · Active" },
@@ -22,6 +23,17 @@ export function SettingsPage() {
   const [threshold, setThreshold] = useState(99.5);
   const [fontSize, setFontSize] = useState(16);
   const [reveal, setReveal] = useState(false);
+  const [keyInput, setKeyInput] = useState("");
+  const [keyStatus, setKeyStatus] = useState("");
+
+  useEffect(() => {
+    setKeyInput(getProviderKey());
+  }, []);
+
+  function handleSaveKey() {
+    saveProviderKey(keyInput.trim());
+    setKeyStatus(keyInput.trim() ? "Saved for this browser session." : "Key cleared.");
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-8">
@@ -93,7 +105,9 @@ export function SettingsPage() {
                 <Input
                   label="Groq Cloud Secret Key"
                   type={reveal ? "text" : "password"}
-                  defaultValue="gsk_9a7x4k2m8p••••••••••••"
+                  value={keyInput}
+                  onChange={(e) => setKeyInput(e.target.value)}
+                  placeholder="gsk_…"
                 />
                 <button
                   type="button"
@@ -104,16 +118,27 @@ export function SettingsPage() {
                 </button>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
-                <Button size="sm" variant="dark">
-                  Test Ping
-                </Button>
-                <Button size="sm" variant="secondary">
+                <Button size="sm" variant="dark" onClick={handleSaveKey}>
                   Update
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setKeyInput("");
+                    saveProviderKey("");
+                    setKeyStatus("Key cleared.");
+                  }}
+                >
+                  Remove
                 </Button>
               </div>
               <p className="mono mt-2 text-[10px] text-[var(--text-muted)]">
-                Hardware enclave masked · last 4 only shown in UI
+                Stored in sessionStorage for this browser tab · sent as X-Provider-Key
               </p>
+              {keyStatus ? (
+                <p className="mt-2 text-xs text-[var(--accent)]">{keyStatus}</p>
+              ) : null}
             </div>
 
             <label className="mt-5 block">

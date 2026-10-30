@@ -78,19 +78,19 @@ Deploy the repository root to Vercel. `vercel.json` builds the Next.js app in `f
 
 ## Status
 
-**Phase 1 + frontend UI on `develop`**
+**Phases 0–2 + design UI on `develop`**
 
-Backend: document ingestion API (validate → extract → chunk → embed → store) with Clerk JWT auth.
+Backend:
+- Document ingestion (validate → extract → chunk → embed → store)
+- Clerk JWT auth dependency
+- pgvector retrieval (top 6) + grounded prompt
+- OpenAI-compatible provider streaming (SSE: meta / token / citations / done / error)
+- Threads, messages, citations persistence
+- Provider catalog + key test
+- `/api/me` profile, theme defaults, encrypted remember-key helpers
 
-Frontend (Quiet Light / Mineral Emerald system from Figma + design prompt):
-- `/` editorial landing with ambient emerald atmosphere
-- `/login`, `/sign-up` distraction-free auth
-- `/try` trial workspace
-- `/app` (alias `/workspace`) citation-synced chat workspace
-- `/app/settings` (alias `/settings`) BYOK + privacy controls
-- `/app/admin` (alias `/admin`) org admin portal
-- `/app/library` document vault
+Frontend (Quiet Light / Mineral Emerald):
+- Landing, auth, interactive workspace (streaming demo + citation sync), settings (session key), admin, library
+- Typography: Newsreader, Inter, JetBrains Mono · accent `#00D59D`
 
-Typography: Newsreader (display), Inter (UI), JetBrains Mono (metadata). Primary accent `#00D59D` on `#061B14` ink.
-
-Next: retrieval + SSE generation (Phase 2), then wire UI to live APIs.
+Next: Neon migrate + Clerk env for live end-to-end; OCR and team admin remain later.

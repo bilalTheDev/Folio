@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DOCUMENTS, SOURCES } from "@/lib/mock-data";
+import { DOCUMENTS, SOURCES as DEMO_SOURCES } from "@/lib/mock-data";
+import { demoAnswerStream } from "@/lib/sse";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 
@@ -22,12 +23,43 @@ function CitationChip({ marker, active, onClick }) {
   );
 }
 
+function renderAnswer(text, activeSource, onSelect) {
+  const parts = text.split(/(\[\d+\])/g);
+  return parts.map((part, index) => {
+    const match = part.match(/^\[(\d+)\]$/);
+    if (match) {
+      const marker = Number(match[1]);
+      return (
+        <CitationChip
+          key={`${marker}-${index}`}
+          marker={marker}
+          active={activeSource === marker}
+          onClick={() => onSelect(marker)}
+        />
+      );
+    }
+    return <span key={`t-${index}`}>{part}</span>;
+  });
+}
+
+const SEED_QUESTION =
+  "What were the key drivers for operating margin contraction in the international segment?";
+const SEED_ANSWER =
+  "International operating margins contracted about 240 bps. The primary drivers were FX translation variances in EMEA [1] and elevated distribution logistics overhead [2]. North American manufacturing scale partially offset the pressure through fixed-cost absorption [3].";
+
 export function WorkspaceShell({ compactChrome = false }) {
   const [activeDoc, setActiveDoc] = useState(DOCUMENTS[0].id);
   const [activeSource, setActiveSource] = useState(1);
   const [question, setQuestion] = useState("");
   const [sourcesOpen, setSourcesOpen] = useState(true);
+  const [sources, setSources] = useState(DEMO_SOURCES);
+  const [streaming, setStreaming] = useState(false);
+  const [messages, setMessages] = useState([
+    { id: "u1", role: "user", content: SEED_QUESTION },
+    { id: "a1", role: "assistant", content: SEED_ANSWER, confidence: "99.8%" },
+  ]);
   const sourceRefs = useRef({});
+  const bottomRef = useRef(null);
 
   const doc = useMemo(
     () => DOCUMENTS.find((item) => item.id === activeDoc) || DOCUMENTS[0],
@@ -36,14 +68,65 @@ export function WorkspaceShell({ compactChrome = false }) {
 
   useEffect(() => {
     const el = sourceRefs.current[activeSource];
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
-  }, [activeSource]);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [activeSource, sources]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, streaming]);
 
   function selectSource(marker) {
     setActiveSource(marker);
     setSourcesOpen(true);
+  }
+
+  async function handleAsk() {
+    const text = question.trim();
+    if (!text || streaming) return;
+    if (text.length > 1000) return;
+
+    setQuestion("");
+    setStreaming(true);
+    const userId = `u-${Date.now()}`;
+    const assistantId = `a-${Date.now()}`;
+    setMessages((prev) => [
+      ...prev,
+      { id: userId, role: "user", content: text },
+      { id: assistantId, role: "assistant", content: "", confidence: null },
+    ]);
+
+    try {
+      await demoAnswerStream(text, {
+        onCitations: (items) => {
+          setSources(
+            items.map((item) => ({
+              marker: item.marker,
+              page: item.page,
+              location: item.location || `Passage`,
+              excerpt: item.excerpt,
+              score: item.score,
+            })),
+          );
+          if (items[0]) setActiveSource(items[0].marker);
+        },
+        onToken: (token) => {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantId ? { ...msg, content: msg.content + token } : msg,
+            ),
+          );
+        },
+        onDone: () => {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantId ? { ...msg, confidence: "99.8%" } : msg,
+            ),
+          );
+        },
+      });
+    } finally {
+      setStreaming(false);
+    }
   }
 
   return (
@@ -52,7 +135,6 @@ export function WorkspaceShell({ compactChrome = false }) {
         compactChrome ? "h-[calc(100vh-3.25rem)]" : "h-full min-h-[640px]"
       }`}
     >
-      {/* Document roster */}
       <section className="hidden w-60 shrink-0 flex-col border-r border-white/[0.06] bg-[var(--bg-chrome)] lg:flex">
         <div className="flex items-center justify-between px-4 py-4">
           <p className="mono text-[10px] tracking-[0.16em] text-[var(--text-muted)] uppercase">
@@ -105,7 +187,6 @@ export function WorkspaceShell({ compactChrome = false }) {
         </div>
       </section>
 
-      {/* Synthesis column */}
       <section className="flex min-w-0 flex-1 flex-col">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] px-6 py-4">
           <div>
@@ -119,56 +200,57 @@ export function WorkspaceShell({ compactChrome = false }) {
               {doc.pages} pages · Indexed via Groq Llama 3.3
             </p>
           </div>
-          <Badge tone="cyan">420 tok/sec</Badge>
+          <Badge tone="cyan">{streaming ? "streaming…" : "420 tok/sec"}</Badge>
         </div>
 
-        <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6 md:px-8">
-          <div className="ml-auto max-w-[680px] rounded-lg bg-[var(--surface)] px-4 py-3 text-sm text-[var(--text)]">
-            What were the key drivers for operating margin contraction in the international
-            segment?
-          </div>
-
-          <div className="max-w-[680px] fade-up">
-            <p className="mono mb-2 text-[11px] tracking-[0.14em] text-[var(--text-muted)] uppercase">
-              ✦ Synthesis
-            </p>
-            <div className="rounded-lg border border-white/[0.07] bg-[var(--surface)] px-4 py-4 text-[15px] leading-[1.7] text-[var(--text-secondary)]">
-              International operating margins contracted about 240 bps. The primary drivers were FX
-              translation variances in EMEA
-              <CitationChip
-                marker={1}
-                active={activeSource === 1}
-                onClick={() => selectSource(1)}
-              />
-              and elevated distribution logistics overhead
-              <CitationChip
-                marker={2}
-                active={activeSource === 2}
-                onClick={() => selectSource(2)}
-              />
-              . North American manufacturing scale partially offset the pressure through fixed-cost
-              absorption
-              <CitationChip
-                marker={3}
-                active={activeSource === 3}
-                onClick={() => selectSource(3)}
-              />
-              .
-            </div>
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--accent)]/20 bg-[var(--accent-soft)] px-3 py-2">
-              <p className="text-xs text-[var(--accent)]">
-                ✓ Grounding Confidence: 99.8% (3 citations matched)
-              </p>
-              <div className="flex gap-1">
-                <Button size="sm" variant="ghost">
-                  Copy
-                </Button>
-                <Button size="sm" variant="ghost">
-                  Export
-                </Button>
+        <div
+          className="flex-1 space-y-5 overflow-y-auto px-6 py-6 md:px-8"
+          aria-live="polite"
+        >
+          {messages.map((msg) =>
+            msg.role === "user" ? (
+              <div
+                key={msg.id}
+                className="ml-auto max-w-[680px] rounded-lg bg-[var(--surface)] px-4 py-3 text-sm text-[var(--text)]"
+              >
+                {msg.content}
               </div>
-            </div>
-          </div>
+            ) : (
+              <div key={msg.id} className="max-w-[680px] fade-up">
+                <p className="mono mb-2 text-[11px] tracking-[0.14em] text-[var(--text-muted)] uppercase">
+                  ✦ Synthesis
+                </p>
+                <div className="rounded-lg border border-white/[0.07] bg-[var(--surface)] px-4 py-4 text-[15px] leading-[1.7] text-[var(--text-secondary)]">
+                  {msg.content
+                    ? renderAnswer(msg.content, activeSource, selectSource)
+                    : streaming
+                      ? "…"
+                      : null}
+                </div>
+                {msg.confidence ? (
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--accent)]/20 bg-[var(--accent-soft)] px-3 py-2">
+                    <p className="text-xs text-[var(--accent)]">
+                      ✓ Grounding Confidence: {msg.confidence} ({sources.length} citations
+                      matched)
+                    </p>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => navigator.clipboard?.writeText(msg.content)}
+                      >
+                        Copy
+                      </Button>
+                      <Button size="sm" variant="ghost">
+                        Export
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ),
+          )}
+          <div ref={bottomRef} />
         </div>
 
         <div className="border-t border-white/[0.06] p-4">
@@ -176,32 +258,44 @@ export function WorkspaceShell({ compactChrome = false }) {
             <textarea
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleAsk();
+                }
+              }}
               rows={2}
               maxLength={1000}
               placeholder="Ask a question about this document..."
               className="min-h-[48px] flex-1 resize-none bg-transparent px-2 py-2 text-sm outline-none placeholder:text-[var(--text-muted)]"
+              disabled={streaming}
             />
-            <Button
-              size="icon"
-              aria-label="Send question"
-              onClick={() => setQuestion("")}
-              disabled={!question.trim()}
-              className="shrink-0"
-            >
-              ↑
-            </Button>
+            {streaming ? (
+              <Button size="sm" variant="secondary" onClick={() => setStreaming(false)}>
+                Stop
+              </Button>
+            ) : (
+              <Button
+                size="icon"
+                aria-label="Send question"
+                onClick={handleAsk}
+                disabled={!question.trim()}
+                className="shrink-0"
+              >
+                ↑
+              </Button>
+            )}
           </div>
           <p className="mono mx-auto mt-2 max-w-[720px] px-2 text-[10px] text-[var(--text-muted)]">
-            ⚡ Using Groq Llama 3.3 70B
+            ⚡ Using Groq Llama 3.3 70B · {question.length}/1000
           </p>
         </div>
       </section>
 
-      {/* Sources drawer */}
       {sourcesOpen ? (
         <aside className="hidden w-80 shrink-0 flex-col border-l border-white/[0.06] bg-[var(--bg-chrome)] xl:flex">
           <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-4">
-            <p className="text-sm text-[var(--text)]">Sources ({SOURCES.length} items)</p>
+            <p className="text-sm text-[var(--text)]">Sources ({sources.length} items)</p>
             <button
               type="button"
               className="text-[var(--text-muted)] hover:text-[var(--text)]"
@@ -212,7 +306,7 @@ export function WorkspaceShell({ compactChrome = false }) {
             </button>
           </div>
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
-            {SOURCES.map((source) => {
+            {sources.map((source) => {
               const active = source.marker === activeSource;
               return (
                 <button
@@ -240,7 +334,7 @@ export function WorkspaceShell({ compactChrome = false }) {
                     “{source.excerpt}”
                   </p>
                   <div className="mono mt-3 flex items-center justify-between text-[10px] text-[var(--text-muted)]">
-                    <span>Relevance: {source.score.toFixed(2)}</span>
+                    <span>Relevance: {Number(source.score).toFixed(2)}</span>
                     <span className="text-[var(--accent)]">View in page ↗</span>
                   </div>
                 </button>

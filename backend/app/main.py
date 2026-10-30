@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.config import get_settings
 from backend.app.db import dispose_engine
-from backend.app.routes import documents, health
+from backend.app.routes import documents, health, me, providers, threads
 from backend.app.security.logging_filter import install_logging_filter
 
 APP_VERSION = "0.1.0"
@@ -51,6 +51,9 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router, prefix="/api")
     app.include_router(documents.router, prefix="/api")
+    app.include_router(threads.router, prefix="/api")
+    app.include_router(providers.router, prefix="/api")
+    app.include_router(me.router, prefix="/api")
 
     return app
 
