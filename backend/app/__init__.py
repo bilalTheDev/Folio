@@ -1,1 +1,0 @@
-"""Folio FastAPI application package."""
