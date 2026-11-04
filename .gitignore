@@ -1,41 +1,28 @@
-# Dependencies
-node_modules/
-frontend/node_modules/
-
-# Next.js
-.next/
-frontend/.next/
-out/
-dist/
-
-# Python
-.venv/
-backend/.venv/
-__pycache__/
-*.py[cod]
-*$py.class
-*.egg-info/
-.eggs/
-*.egg
-
-# Environment and secrets
+# Env
 .env
 .env.local
 .env.*.local
-.vercel
 
-# Caches and tooling
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
 .pytest_cache/
 .ruff_cache/
-.mypy_cache/
-.coverage
-htmlcov/
-*.log
 
-# OS and editors
+# Backend runtime data (uploads + per-user indexes)
+backend/storage/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# OS / editors
 .DS_Store
 Thumbs.db
-.idea/
 .vscode/
-*.swp
-*.swo
+.idea/
