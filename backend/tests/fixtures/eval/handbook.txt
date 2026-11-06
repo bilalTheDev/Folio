@@ -1,0 +1,43 @@
+# Launch
+
+Project Alpha launch date is the fourteenth of March. The launch codename is BLUE HERON.
+
+# Budget
+
+Alpha budget owners must file expense reports within ten working days. The Q1 budget cap is 420000.
+
+# Invoice
+
+Purchase order ZX-4419 must appear on every line item. The amount due is 18750.50 and is payable by 12 April. Shipping is FOB origin.
+
+# Field research
+
+The Beta team studies migratory patterns of arctic terns. Field work happens in Svalbard every June.
+
+# Termination
+
+Employment may be terminated with 30 days written notice. Garden leave applies to directors.
+
+# Security
+
+Production SSH keys rotate every 90 days. The vault path is secret/folio/prod.
+
+# Vendors
+
+Preferred carrier is Northwind Logistics. The P1 incident SLA is four hours.
+
+# Offices
+
+Headquarters is in Austin. The satellite office is in Lisbon.
+
+# On-call
+
+Primary on-call is Priya Chen. Secondary is Jonah Hale.
+
+# Holidays
+
+The office is closed on 4 July and 25 December.
+
+# Retention
+
+Chat logs are retained for 18 months. Document bytes are retained until the user deletes them.

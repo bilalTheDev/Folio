@@ -4,6 +4,8 @@ from cryptography.fernet import Fernet, InvalidToken
 
 from app.config import settings
 
+KNOWN_PREFIXES = ("hf_", "gsk_", "csk_")
+
 
 class DecryptionError(Exception):
     pass
@@ -26,4 +28,8 @@ def decrypt(ciphertext: str) -> str:
 
 
 def mask_token(token: str) -> str:
-    return f"hf_****{token[-4:]}"
+    tail = token[-4:] if len(token) >= 4 else token
+    for prefix in KNOWN_PREFIXES:
+        if token.startswith(prefix):
+            return f"{prefix}****{tail}"
+    return f"****{tail}"

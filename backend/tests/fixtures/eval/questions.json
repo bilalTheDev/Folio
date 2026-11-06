@@ -1,0 +1,72 @@
+[
+  {
+    "question": "What is the launch codename?",
+    "expected_substring": "BLUE HERON",
+    "expected_section": "Launch"
+  },
+  {
+    "question": "When is the Alpha launch?",
+    "expected_substring": "fourteenth of March",
+    "expected_section": "Launch"
+  },
+  {
+    "question": "What do they call the launch internally?",
+    "expected_substring": "BLUE HERON",
+    "expected_section": "Launch"
+  },
+  {
+    "question": "Who files expense reports?",
+    "expected_substring": "budget owners",
+    "expected_section": "Budget"
+  },
+  {
+    "question": "What is the Q1 budget cap?",
+    "expected_substring": "420000",
+    "expected_section": "Budget"
+  },
+  {
+    "question": "What is payable for order ZX-4419?",
+    "expected_substring": "18750.50",
+    "expected_section": "Invoice"
+  },
+  {
+    "question": "Where does field work happen?",
+    "expected_substring": "Svalbard",
+    "expected_section": "Field research"
+  },
+  {
+    "question": "How much notice is required to terminate employment?",
+    "expected_substring": "30 days",
+    "expected_section": "Termination"
+  },
+  {
+    "question": "How often do production SSH keys rotate?",
+    "expected_substring": "90 days",
+    "expected_section": "Security"
+  },
+  {
+    "question": "Who is the preferred carrier?",
+    "expected_substring": "Northwind Logistics",
+    "expected_section": "Vendors"
+  },
+  {
+    "question": "Where is headquarters?",
+    "expected_substring": "Austin",
+    "expected_section": "Offices"
+  },
+  {
+    "question": "Who is primary on-call?",
+    "expected_substring": "Priya Chen",
+    "expected_section": "On-call"
+  },
+  {
+    "question": "When is the office closed in July?",
+    "expected_substring": "4 July",
+    "expected_section": "Holidays"
+  },
+  {
+    "question": "How long are chat logs retained?",
+    "expected_substring": "18 months",
+    "expected_section": "Retention"
+  }
+]

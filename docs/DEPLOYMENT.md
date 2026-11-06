@@ -119,5 +119,5 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 - [ ] Two test accounts with different documents cannot retrieve each other's passages
       (`tests/test_rag.py::test_retrieval_never_crosses_users`).
 - [ ] Hitting `/auth/signin` repeatedly returns 429 after the configured limit.
-- [ ] Re-check the provider/model allowlist in `backend/app/services/providers.py` against
+- [ ] Re-check the provider/model allowlist in `backend/app/services/providers/` against
       `GET https://router.huggingface.co/v1/models`; providers drop models over time.

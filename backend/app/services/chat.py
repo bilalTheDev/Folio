@@ -1,5 +1,6 @@
 import re
 from datetime import timedelta
+from pathlib import Path
 
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -7,9 +8,10 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.core.errors import AppError
 from app.models.chat import MessageOut, SessionOut, SourceOut
 from app.models.common import utcnow
+from app.models.document import DocumentStatus
 from app.services import llm, rag
 from app.services.encryption import DecryptionError, decrypt
-from app.services.providers import is_allowed
+from app.services.providers import active_credential, is_complete
 
 DEFAULT_TITLE = "Untitled chat"
 HISTORY_LIMIT = 10
@@ -17,6 +19,11 @@ TITLE_LENGTH = 60
 NO_CONTEXT_REPLY = (
     "I couldn't find anything in your indexed documents to answer that. "
     "Upload a document on the Documents page, or wait for indexing to finish, and ask again."
+)
+_CITE_RE = re.compile(r"\[(\d+)\]")
+_TOKEN_RE = re.compile(r"[a-z0-9]{3,}", re.I)
+_STOPWORDS = frozenset(
+    "the a an and or of to in for with on at by from as is was are be this that it your you we they their our not here what".split()
 )
 
 
@@ -73,6 +80,65 @@ async def _filenames(db: AsyncIOMotorDatabase, user: dict, messages: list[dict])
     return {d["_id"]: d["filename"] async for d in cursor}
 
 
+def named_document_ids(question: str, documents: list[dict]) -> list[str] | None:
+    """If the question names an uploaded file, restrict retrieval to those documents."""
+    matched: list[str] = []
+    for doc in documents:
+        filename = (doc.get("filename") or "").strip()
+        if not filename:
+            continue
+        stem = Path(filename).stem
+        names = {filename.lower()}
+        if stem:
+            names.add(stem.lower())
+        if any(re.search(rf"(?<![\w.]){re.escape(name)}(?![\w])", question, re.I) for name in names):
+            matched.append(str(doc["_id"]))
+    return matched or None
+
+
+def _page_number(value) -> int | None:
+    if value in (None, ""):
+        return None
+    if isinstance(value, int):
+        return value
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _tokens(text: str) -> set[str]:
+    return {token for token in _TOKEN_RE.findall(text.lower()) if token not in _STOPWORDS}
+
+
+def groundedness_warning(answer: str, sources: list[dict]) -> bool:
+    """Cheap overlap check; never blocks the reply."""
+    if not sources or not (answer or "").strip():
+        return False
+    if "couldn't find" in answer.lower():
+        return False
+    cited = {int(n) for n in _CITE_RE.findall(answer)}
+    if cited and any(n < 1 or n > len(sources) for n in cited):
+        return True
+    chosen = [sources[n - 1] for n in sorted(cited) if 1 <= n <= len(sources)] or sources
+    context = " ".join((s.get("parent_text") or s.get("chunk_text") or "") for s in chosen)
+    answer_tokens = _tokens(answer)
+    if not answer_tokens:
+        return False
+    overlap = len(answer_tokens & _tokens(context)) / len(answer_tokens)
+    return overlap < 0.18
+
+
+def _source_payload(source: dict) -> dict:
+    return {
+        "document_id": ObjectId(source["document_id"]),
+        "chunk_text": source["chunk_text"],
+        "page_or_section": source.get("page_or_section"),
+        "section_heading": source.get("section_heading") or None,
+        "page_number": _page_number(source.get("page_number")),
+    }
+
+
 def _message_out(message: dict, filenames: dict[ObjectId, str]) -> MessageOut:
     return MessageOut(
         id=str(message["_id"]),
@@ -85,10 +151,13 @@ def _message_out(message: dict, filenames: dict[ObjectId, str]) -> MessageOut:
                 filename=filenames.get(s["document_id"]),
                 chunk_text=s["chunk_text"],
                 page_or_section=s.get("page_or_section"),
+                section_heading=s.get("section_heading"),
+                page_number=_page_number(s.get("page_number")),
             )
             for s in message.get("sources", [])
         ],
         created_at=message["created_at"],
+        groundedness_warning=message.get("groundedness_warning"),
     )
 
 
@@ -98,11 +167,8 @@ async def messages_out(db: AsyncIOMotorDatabase, user: dict, messages: list[dict
 
 
 async def send_message(db: AsyncIOMotorDatabase, user: dict, session: dict, content: str):
-    encrypted = user.get("hf_token_encrypted")
-    provider, model = user.get("selected_provider"), user.get("selected_model")
-    if not encrypted:
-        raise AppError(409, "missing_token", "Add your Hugging Face token in Settings first.")
-    if not provider or not model or not is_allowed(provider, model):
+    cred = active_credential(user)
+    if not is_complete(cred):
         raise AppError(409, "missing_provider", "Choose a provider and model in Settings first.")
 
     history = (
@@ -113,18 +179,36 @@ async def send_message(db: AsyncIOMotorDatabase, user: dict, session: dict, cont
     )
     history.reverse()
 
-    sources = await rag.retrieve(user["_id"], content)
+    token = None
+    try:
+        token = decrypt(cred["token_encrypted"])
+    except DecryptionError:
+        token = None
+
+    search_query = content
+    if history and token:
+        search_query = await llm.condense_query(
+            token=token, credential=cred, question=content, history=history
+        )
+
+    indexed = await db.documents.find(
+        {"user_id": user["_id"], "status": DocumentStatus.indexed.value}, {"filename": 1}
+    ).to_list(500)
+    document_ids = named_document_ids(content, indexed)
+    sources = await rag.retrieve(user["_id"], search_query, document_ids=document_ids)
+    warning = False
     if sources:
-        try:
-            hf_token = decrypt(encrypted)
-        except DecryptionError:
+        if token is None:
             raise AppError(409, "token_unreadable", "Your saved token can't be read. Re-enter it in Settings.")
         reply = await llm.answer(
-            hf_token=hf_token, provider=provider, model=model, question=content, history=history, sources=sources
+            token=token, credential=cred, question=content, history=history, sources=sources
         )
-        del hf_token
+        warning = groundedness_warning(reply, sources)
+        del token
     else:
         reply = NO_CONTEXT_REPLY
+        if token:
+            del token
 
     now = utcnow()
     user_message = {"session_id": session["_id"], "role": "user", "content": content, "sources": [], "created_at": now}
@@ -132,14 +216,8 @@ async def send_message(db: AsyncIOMotorDatabase, user: dict, session: dict, cont
         "session_id": session["_id"],
         "role": "assistant",
         "content": reply or "The model returned an empty answer. Try rephrasing the question.",
-        "sources": [
-            {
-                "document_id": ObjectId(s["document_id"]),
-                "chunk_text": s["chunk_text"],
-                "page_or_section": s.get("page_or_section"),
-            }
-            for s in sources
-        ],
+        "sources": [_source_payload(s) for s in sources],
+        "groundedness_warning": warning,
         "created_at": now + timedelta(milliseconds=1),
     }
     await db.chat_messages.insert_many([user_message, assistant_message])

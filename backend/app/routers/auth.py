@@ -35,9 +35,7 @@ async def signup(request: Request, body: SignupIn, db: AsyncIOMotorDatabase = De
         "password_hash": hash_password(body.password),
         "created_at": utcnow(),
         "onboarding_completed": False,
-        "hf_token_encrypted": None,
-        "selected_provider": None,
-        "selected_model": None,
+        "credentials": [],
     }
     try:
         result = await db.users.insert_one(user)

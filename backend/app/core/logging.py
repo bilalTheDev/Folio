@@ -3,6 +3,8 @@ import re
 
 _PATTERNS = [
     (re.compile(r"hf_[A-Za-z0-9]{4,}"), "hf_[REDACTED]"),
+    (re.compile(r"gsk_[A-Za-z0-9]{4,}"), "gsk_[REDACTED]"),
+    (re.compile(r"csk_[A-Za-z0-9]{4,}"), "csk_[REDACTED]"),
     (re.compile(r"(?i)(bearer\s+)[A-Za-z0-9\-._~+/]+=*"), r"\1[REDACTED]"),
     (re.compile(r"(?i)(authorization['\"]?\s*[:=]\s*['\"]?)[^'\",\s]+"), r"\1[REDACTED]"),
 ]

@@ -9,7 +9,8 @@ def test_signup_creates_user_and_hashes_password(client, mongo):
     assert body["email"] == "ada@example.com"
     assert body["onboarding_completed"] is False
     assert body["onboarding"]["next_step"] == "upload"
-    assert "password_hash" not in body and "hf_token_encrypted" not in body
+    assert "password_hash" not in body and "token_encrypted" not in body
+    assert body["token_masked"] is None and body["has_credential"] is False
 
     stored = mongo.users.find_one({"email": "ada@example.com"})
     assert stored["password_hash"].startswith("$2b$")
@@ -52,7 +53,7 @@ def test_me_requires_valid_access_token(client):
     me = client.get("/users/me", headers=headers)
     assert me.status_code == 200
     assert me.json()["email"] == "d@example.com"
-    assert me.json()["hf_token_masked"] is None
+    assert me.json()["token_masked"] is None
 
 
 def test_refresh_rotates_tokens_and_signout_clears_cookie(client):

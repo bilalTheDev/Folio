@@ -1,7 +1,9 @@
-# Env
+# Env (never commit secrets). .env.example templates stay tracked.
 .env
 .env.local
 .env.*.local
+backend/.env
+frontend/.env.local
 
 # Python
 __pycache__/

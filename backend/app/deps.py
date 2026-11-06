@@ -7,6 +7,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.core.errors import AppError
 from app.core.security import InvalidToken, decode_token
 from app.db import get_db
+from app.services.users import migrate_legacy_credentials, needs_legacy_migration
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -28,6 +29,10 @@ async def get_current_user(
     user = await db.users.find_one({"_id": user_id})
     if user is None:
         raise _unauthorized()
+    if needs_legacy_migration(user):
+        user = await migrate_legacy_credentials(db, user)
+    else:
+        user.setdefault("credentials", [])
     return user
 
 

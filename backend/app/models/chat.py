@@ -45,6 +45,8 @@ class SourceOut(BaseModel):
     filename: str | None
     chunk_text: str
     page_or_section: str | None
+    section_heading: str | None = None
+    page_number: int | None = None
 
 
 class MessageOut(BaseModel):
@@ -54,6 +56,7 @@ class MessageOut(BaseModel):
     content: str
     sources: list[SourceOut] = []
     created_at: datetime
+    groundedness_warning: bool | None = None
 
 
 class ExchangeOut(BaseModel):

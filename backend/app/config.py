@@ -42,7 +42,13 @@ class Settings(BaseSettings):
     embed_model: str = "BAAI/bge-small-en-v1.5"
     chunk_size: int = Field(default=512, gt=0)
     chunk_overlap: int = Field(default=50, ge=0)
+    chunk_leaf_prose: int = Field(default=512, gt=0)
+    chunk_parent_prose: int = Field(default=2048, gt=0)
+    chunk_leaf_structured: int = Field(default=256, gt=0)
+    chunk_parent_structured: int = Field(default=1024, gt=0)
     retrieval_top_k: int = Field(default=5, gt=0, le=20)
+    retrieval_candidate_k: int = Field(default=20, gt=0, le=50)
+    rerank_enabled: bool = True
 
     hf_router_base_url: str = "https://router.huggingface.co/v1"
     llm_timeout_seconds: int = Field(default=60, gt=0)
